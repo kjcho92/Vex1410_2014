@@ -29,9 +29,9 @@
 
 #include "Vex_Competition_Includes.c"   //Main competition background code...do not modify!
 
-int gyrotestval;
-int jumper1testval;
-int jumper2testval;
+//int gyrotestval;
+//int jumper1testval;
+//int jumper2testval;
 
 int filterjoystick (int joystick);
 
@@ -148,14 +148,19 @@ task usercontrol()
 	bool Sopening = false;
 	bool Sopen = false;
 	bool Sclosing = false;
+	
+	bool armPotentiometerUsed = true;
 
   const int power7 = 40;
 	 //DefaultLeftValue = SensorValue[armPotentiometerLeft];
 	 //DefaultRightValue = SensorValue[armPotentiometerRight];
 
-	DefaultLeftValue = 1638;
-	DefaultRightValue = 1628;
+	// DefaultLeftValue = 1864;
+	// DefaultRightValue = 1902;
+  DefaultLeftValue = 1700;
+	DefaultRightValue = 1753;
 
+  
 
 	/*
 	int leftPot = SensorValue[armPotentiometerLeft];
@@ -171,10 +176,19 @@ task usercontrol()
 		//{
 
 		//}
-
+	  /*
+		if (SensorValue[armPotentiometerLeft] < 300 || SensorValue[armPotentiometerRight] < 300) 
+		{
+			armPotentiometerUsed = false;
+		}
+		else 
+		{
+			armPotentiometerUsed = true;
+		}
+		*/
         // reverse when moving backward
-        if (vexRT[Btn7U] == 1) MovingForward = true;
-        else if(vexRT[Btn7D] == 1) MovingForward = false;
+     if (vexRT[Btn7U] == 1) MovingForward = true;
+     else if(vexRT[Btn7D] == 1) MovingForward = false;
 
 
 		int filtered2 = filterjoystick(vexRT[Ch2]); //forward and backwards
@@ -189,9 +203,9 @@ task usercontrol()
 		// int filtered7d = filterjoystick(vexRT[Btn7D]);
 
 		// Button7
-        filtered2 = ReverseIfNeeded(filtered2);
+    filtered2 = ReverseIfNeeded(filtered2);
         // filtered4 = ReverseIfNeeded(filtered4);
-        int power7r = ReverseIfNeeded(power7);
+    int power7r = ReverseIfNeeded(power7);
 
 		//standard drive motor block
 		motor[FrontLeft] = filtered2 + filtered4 + vexRT[Btn7R] * power7r - vexRT[Btn7L] * power7r;
@@ -199,11 +213,11 @@ task usercontrol()
 		motor[BackRight] = filtered2 - filtered4 + vexRT[Btn7R]* power7r - vexRT[Btn7L] * power7r;
 		motor[BackLeft] = filtered2 + filtered4 - vexRT[Btn7R] * power7r + vexRT[Btn7L] * power7r;
 
-		gyrotestval = SensorValue[Gyro];
-		jumper1testval = SensorValue[Jumper1];
-		jumper2testval = SensorValue[Jumper2];
+		//gyrotestval = SensorValue[Gyro];
+		//jumper1testval = SensorValue[Jumper1];
+		//jumper2testval = SensorValue[Jumper2];
 
-		if (vexRT[Btn5D] == 1) GyroRotate(450);
+//		if (vexRT[Btn5D] == 1) GyroRotate(450);
 
 		// Button7
 		// motor[LeftLift1] = (vexRT[Btn7D] - vexRT[Btn7U]) * 127 + vexRT[Btn8L] * 20 - vexRT[Btn8R] * 20;
@@ -221,12 +235,26 @@ task usercontrol()
 		//testing scissor lift block DO NOT USE WITH ANY OTHER BLOCK
 
 		float leftPot = GetLeftValue();
-  	    float rightPot = GetRightValue();
+  	float rightPot = GetRightValue();
 
+  	if (leftPot <= 0 || rightPot <= 0)
+  	{
+			armPotentiometerUsed = false;
+		}
+		else 
+		{
+			armPotentiometerUsed = true;
+		}
+  		
+		int lp = 127;
+		int rp = 127;
 
-		int lp = GetLeftPower(leftPot, rightPot);
-		int rp = GetRightPower(leftPot, rightPot);
-
+		if (armPotentiometerUsed == true)
+		{	
+			lp = GetLeftPower(leftPot, rightPot);
+			rp = GetRightPower(leftPot, rightPot);
+		}
+		
 		if (lp != 0 && rp != 0)
 		{
 		    writeDebugStream("lp: %d	", lp);
@@ -245,7 +273,10 @@ task usercontrol()
 		motor[RightLift2] = (vexRT[Btn8D] - vexRT[Btn8U]) * rp + vexRT[Btn8R] * 25 - vexRT[Btn8L] * 25;
 
         // adjust when we stops
-		AdjustLift();
+		if (armPotentiometerUsed == true)
+		{
+			AdjustLift();
+		}
 
 		motor[CubeIntake] = vexRT[Btn5U] * -127;
 
@@ -399,7 +430,7 @@ int filterjoystick (int joystick)
 float GetLeftValue()
 {
 	int sValue = SensorValue[armPotentiometerLeft];
-	float value = (sValue * 0.99) - DefaultLeftValue;
+	float value = (sValue * 1) - DefaultLeftValue;
 	if (value <0) value = 0;
 
 		return value;
@@ -423,7 +454,7 @@ int GetLeftPower(float leftPot, float rightPot)
 	const int fullPower = 127;
 	const int fullPower_Down = 100;
 	const float delta = 0.6;
-	const float delta_Down = 0.36;
+	const float delta_Down = 0.9;
 
     // No buttons pressed
 	if (vexRT[Btn8D] == 0 && vexRT[Btn8U] == 0) return 0;
@@ -435,10 +466,16 @@ int GetLeftPower(float leftPot, float rightPot)
         PreviousAction = Up;
 
         // if we just started moving, we need full power.
-		if (leftPot <= 500) return fullPower;
+		if (leftPot <= 500) 
+		{
+			return fullPower;
+		}
 
         // when the right lift is higher, we need full power for the left
-		if (leftPot <= rightPot) return fullPower;
+		if (leftPot <= rightPot) 
+		{
+			return fullPower;
+		}
 		else
 		{
             // when the left is higher, we need to slow down the left
@@ -479,16 +516,22 @@ int GetRightPower(float leftPot, float rightPot)
 	const int fullPower = 127;
 	const int fullPower_Down = 100;
 	const float delta = 0.6;
-	const float delta_Down = 0.36;
+	const float delta_Down = 0.9;
 
 	if (vexRT[Btn8D] == 0 && vexRT[Btn8U] == 0) return 0;
 
 	if (vexRT[Btn8U] == 1)
 	{
         PreviousAction = Up;
-		if (rightPot <= 500) return fullPower;
+		if (rightPot <= 500) 
+		{
+			fullPower;
+		}
 
-		if (leftPot >= rightPot) return fullPower;
+		if (leftPot >= rightPot) 
+		{
+			return fullPower;
+		}
 		else
 		{
 			float offset = (leftPot / rightPot) * 100 * delta;
@@ -537,14 +580,17 @@ void AdjustLift()
 	motor[RightLift2] = 0;
 
 	float leftPot = GetLeftValue();
-    float rightPot = GetRightValue();
+  float rightPot = GetRightValue();
 
     // skip adjustment, if the lifts are too low or too higt.
-    if ((leftPot <= 200 && rightPot <=200) || (leftPot >= 1700 && rightPot >= 1700)) return;
+  if (leftPot <= 100 || rightPot <=100 || leftPot >= 1500 || rightPot >= 1500) 
+  {
+  	return;
+  }
 
     // offset = tolerance
-    int offset = 10;
-    int offset_Down = 5;
+  int offset = 10;
+  int offset_Down = 5;
 
     // power values that we need for up and down
 	int power = -33;
@@ -552,6 +598,9 @@ void AdjustLift()
 
     if (leftPot == rightPot) return;
 
+    ClearTimer(T1);
+		
+    
     // in case of moving up
     if (PreviousAction == Up)
     {
@@ -560,20 +609,27 @@ void AdjustLift()
             // when the left is higher, move up the right until the right + offset is not lower than the left.
 			while (leftPot > rightPot + offset)
 			{
+					if (time1[T1] > 1000) return;
+
+				  if (vexRT[Btn8D] != 0 || vexRT[Btn8U] != 0) return;
 					motor[RightLift1] = motor[RightLift2] = power;
 
 					leftPot = GetLeftValue();
-			        rightPot = GetRightValue();
+			    rightPot = GetRightValue();
 			}
 		}
 		else if (leftPot < rightPot)
 		{
 			while (leftPot + offset < rightPot)
 			{
+				if (time1[T1] > 1000) return;
+
+         if (vexRT[Btn8D] != 0 || vexRT[Btn8U] != 0) return;
+
 					motor[LeftLift1] = motor[LeftLift2] = power;
 
 					leftPot = GetLeftValue();
-    				rightPot = GetRightValue();
+    			rightPot = GetRightValue();
 			}
 		}
 	}
@@ -581,18 +637,21 @@ void AdjustLift()
 	{
         // ok, for down. even more interesting
         // let's wait for 1.3 secs. (until the lift completely stops)
-	    ClearTimer(T1);
-		while (time1[T1] < 1300){}
+	    // ClearTimer(T1);
+			// while (time1[T1] < 1300){}
 
-        leftPot = GetLeftValue();
-        rightPot = GetRightValue();
+    leftPot = GetLeftValue();
+    rightPot = GetRightValue();
 
 		if (leftPot > rightPot)
 		{
 			while (leftPot  > rightPot + offset_Down)
 			{
+				if (time1[T1] > 1000) return;
 
-				motor[RightLift1] = motor[RightLift2] = power_Down;
+         if (vexRT[Btn8D] != 0 || vexRT[Btn8U] != 0) return;
+
+				 motor[RightLift1] = motor[RightLift2] = power_Down;
 
                 // uncommend the block below if we want to adjust by moving down.
                 // then we might need the delays
@@ -602,16 +661,19 @@ void AdjustLift()
 				// ClearTimer(T1);
 				// while (time1[T1] < 300){}
 
-				leftPot = GetLeftValue();
-				rightPot = GetRightValue();
+				 leftPot = GetLeftValue();
+				 rightPot = GetRightValue();
 			}
 		}
 		else if (leftPot < rightPot)
 		{
 			while (leftPot + offset_Down < rightPot)
 			{
+				 if (time1[T1] > 1000) return;
 
-				motor[LeftLift1] = motor[LeftLift2] = power_Down;
+         if (vexRT[Btn8D] != 0 || vexRT[Btn8U] != 0) return;
+
+				 motor[LeftLift1] = motor[LeftLift2] = power_Down;
 
                 // uncommend the block below if we want to adjust by moving down.
 				// motor[RightLift1] = power_Down;
@@ -620,8 +682,8 @@ void AdjustLift()
 				// ClearTimer(T1);
 				// while (time1[T1] < 300){}
 
-				leftPot = GetLeftValue();
-				rightPot = GetRightValue();
+				 leftPot = GetLeftValue();
+				 rightPot = GetRightValue();
 			}
 		}
 	}
