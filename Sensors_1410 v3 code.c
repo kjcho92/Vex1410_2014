@@ -33,7 +33,7 @@
 //int jumper1testval;
 //int jumper2testval;
 
-int filterjoystick (int joystick);
+//int filterjoystick (int joystick);
 
 int DefaultLeftValue = 0;
 int DefaultRightValue = 0;
@@ -55,6 +55,7 @@ float GetRightValue();
 void AdjustLift();
 
 bool MovingForward = true;
+
 
 typedef enumWord {
     Adjusted = 0,
@@ -144,13 +145,16 @@ task autonomous()
 
 task usercontrol()
 {
-	bool Sclosed = true;
-	bool Sopening = false;
-	bool Sopen = false;
-	bool Sclosing = false;
+	//bool Sclosed = true;
+	//bool Sopening = false;
+	//bool Sopen = false;
+	//bool Sclosing = false;
 	
 	bool armPotentiometerUsed = true;
 
+	bool cubeIntakeClosing = false;
+	bool crayonIntakeClosing = false;
+	
   const int power7 = 40;
 	 //DefaultLeftValue = SensorValue[armPotentiometerLeft];
 	 //DefaultRightValue = SensorValue[armPotentiometerRight];
@@ -160,7 +164,7 @@ task usercontrol()
   DefaultLeftValue = 1700;
 	DefaultRightValue = 1753;
 
-  
+
 
 	/*
 	int leftPot = SensorValue[armPotentiometerLeft];
@@ -177,11 +181,11 @@ task usercontrol()
 
 		//}
 	  /*
-		if (SensorValue[armPotentiometerLeft] < 300 || SensorValue[armPotentiometerRight] < 300) 
+		if (SensorValue[armPotentiometerLeft] < 300 || SensorValue[armPotentiometerRight] < 300)
 		{
 			armPotentiometerUsed = false;
 		}
-		else 
+		else
 		{
 			armPotentiometerUsed = true;
 		}
@@ -191,9 +195,11 @@ task usercontrol()
      else if(vexRT[Btn7D] == 1) MovingForward = false;
 
 
-		int filtered2 = filterjoystick(vexRT[Ch2]); //forward and backwards
+     int filtered2 = vexRT[Ch2];
+     int filtered4 = vexRT[Ch4];
+		// int filtered2 = filterjoystick(vexRT[Ch2]); //forward and backwards
 																								//left and right
-		int filtered4 = filterjoystick(vexRT[Ch4]);	//rotate
+		//int filtered4 = filterjoystick(vexRT[Ch4]);	//rotate
 
 		//leftPot = SensorValue[armPotentiometerLeft];
 		//rightPot = SensorValue[armPotentiometerRight] - 5;
@@ -241,20 +247,20 @@ task usercontrol()
   	{
 			armPotentiometerUsed = false;
 		}
-		else 
+		else
 		{
 			armPotentiometerUsed = true;
 		}
-  		
+
 		int lp = 127;
 		int rp = 127;
 
 		if (armPotentiometerUsed == true)
-		{	
+		{
 			lp = GetLeftPower(leftPot, rightPot);
 			rp = GetRightPower(leftPot, rightPot);
 		}
-		
+
 		if (lp != 0 && rp != 0)
 		{
 		    writeDebugStream("lp: %d	", lp);
@@ -275,11 +281,57 @@ task usercontrol()
         // adjust when we stops
 		if (armPotentiometerUsed == true)
 		{
-			AdjustLift();
+			// AdjustLift();
 		}
 
-		motor[CubeIntake] = vexRT[Btn5U] * -127;
+		int btn5u = vexRT[Btn5U];
+		int btn5d = vexRT[Btn5D];
+		// motor[CubeIntake] = (btn5u - btn5d) * 127;
+		
+		if (btn5u == 1)
+		{
+			cubeIntakeClosing = false;
+			motor[CubeIntake] = (btn5u - btn5d) * 127;
+		}
+		else if (btn5d == 1)
+		{
+			cubeIntakeClosing = true;
+			motor[CubeIntake] = (btn5u - btn5d) * 127;
+		}
+		else if (btn5u == 0 && btn5d == 0 && cubeIntakeClosing)
+		{
+				motor[CubeIntake] = -20;
+		}
+		else if (btn5u == 0 && btn5d == 0 && !cubeIntakeClosing)
+		{
+				motor[CubeIntake] = 0;
+		}
+	
 
+		int btn6u = vexRT[Btn6U];
+		int btn6d = vexRT[Btn6D];
+		
+		if (btn6d == 1)
+		{
+			crayonIntakeClosing = false;
+			motor[CrayonIntake] = (btn6u - btn6d) * 127;
+		}
+		else if (btn6u == 1)
+		{
+			crayonIntakeClosing = true;
+			motor[CrayonIntake] = (btn6u - btn6d) * 127;
+		}
+		else if (btn6u == 0 && btn6d == 0 && crayonIntakeClosing)
+		{
+				motor[CrayonIntake] = 25;
+		}
+		else if (btn6u == 0 && btn6d == 0 && !crayonIntakeClosing)
+		{
+				motor[CrayonIntake] = 0;
+		}
+		
+		
+		
 		/*if (vexRT[Btn5D] == 1)
 		{
 			static bool adjacent = false; //true if square next to drivers
@@ -330,7 +382,7 @@ task usercontrol()
 		//Basically, we are telling the claw what it should be doing for each state.
 
 
-
+		/*
 		if (Sclosed) //This is when the claw is in the closed state
 		{
 			//If the open button is pressed, we want to go to the opening state
@@ -362,7 +414,7 @@ task usercontrol()
 				Sopen = false;   //Then we are leaving the open state
 				Sopening = true; //and entering the opening state!
 			}
-			motor[CrayonIntake] = 20; //Although the claw is open, we need to apply a bit of power into the motor due to the elastics
+			motor[CrayonIntake] = 25; //Although the claw is open, we need to apply a bit of power into the motor due to the elastics
 		}
 		else if (Sclosing) //This is when the claw is closing
 		{
@@ -381,7 +433,7 @@ task usercontrol()
 				Sopen = true; //and are towards the open state!!!
 			}
 			motor[CrayonIntake] = 127; //While the claw is opening, we are going full speed in the positive direction
-		}
+		}*/
 	}
 }
 
@@ -390,6 +442,7 @@ int ReverseIfNeeded(int power)
     return MovingForward ? power : -power;
 }
 
+/*
 int filterjoystick (int joystick)
 {
 	const int deadband = 5;
@@ -422,7 +475,7 @@ int filterjoystick (int joystick)
 		return 0; //it's in the deadband
 	}
 }
-
+*/
 /////////////////////////////////////////////////////////////////////////////////////////////
 /// GetValues
 /// Get Potentiometer values
@@ -454,7 +507,7 @@ int GetLeftPower(float leftPot, float rightPot)
 	const int fullPower = 127;
 	const int fullPower_Down = 100;
 	const float delta = 0.6;
-	const float delta_Down = 0.9;
+	const float delta_Down = 0.6;
 
     // No buttons pressed
 	if (vexRT[Btn8D] == 0 && vexRT[Btn8U] == 0) return 0;
@@ -466,13 +519,13 @@ int GetLeftPower(float leftPot, float rightPot)
         PreviousAction = Up;
 
         // if we just started moving, we need full power.
-		if (leftPot <= 500) 
+		if (leftPot <= 500)
 		{
 			return fullPower;
 		}
 
         // when the right lift is higher, we need full power for the left
-		if (leftPot <= rightPot) 
+		if (leftPot <= rightPot)
 		{
 			return fullPower;
 		}
@@ -516,19 +569,19 @@ int GetRightPower(float leftPot, float rightPot)
 	const int fullPower = 127;
 	const int fullPower_Down = 100;
 	const float delta = 0.6;
-	const float delta_Down = 0.9;
+	const float delta_Down = 0.6;
 
 	if (vexRT[Btn8D] == 0 && vexRT[Btn8U] == 0) return 0;
 
 	if (vexRT[Btn8U] == 1)
 	{
-        PreviousAction = Up;
-		if (rightPot <= 500) 
+		PreviousAction = Up;
+		if (rightPot <= 500)
 		{
-			fullPower;
+			return fullPower;
 		}
 
-		if (leftPot >= rightPot) 
+		if (leftPot >= rightPot)
 		{
 			return fullPower;
 		}
@@ -541,7 +594,7 @@ int GetRightPower(float leftPot, float rightPot)
 	}
 	else if (vexRT[Btn8D] == 1)
 	{
-        PreviousAction = Down;
+    PreviousAction = Down;
 		if (leftPot <= rightPot)
 		{
 			if (rightPot <= 400)
@@ -583,7 +636,7 @@ void AdjustLift()
   float rightPot = GetRightValue();
 
     // skip adjustment, if the lifts are too low or too higt.
-  if (leftPot <= 100 || rightPot <=100 || leftPot >= 1500 || rightPot >= 1500) 
+  if (leftPot <= 100 || rightPot <=100 || leftPot >= 1500 || rightPot >= 1500)
   {
   	return;
   }
@@ -599,8 +652,8 @@ void AdjustLift()
     if (leftPot == rightPot) return;
 
     ClearTimer(T1);
-		
-    
+
+
     // in case of moving up
     if (PreviousAction == Up)
     {
@@ -757,7 +810,6 @@ void Rotate(int power)
 
 void GyroRotate (int angle)
 {
-	bool tryingtomove = false;
 	SensorValue[Gyro] = 0;
 	if (SensorValue[Jumper2] == 0)	{
 		angle = -angle;
