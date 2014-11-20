@@ -40,9 +40,10 @@ int DefaultRightValue = 0;
 
 void ForBack (int power);
 void LeftRight (int power);
+void RightEdge (int power);
 void Rotate (int power);
 void Claw (int power);
-void Lift (int power);
+void Lift (float power);
 int LiftAdjust (int thisP, int otherP);
 int GetLeftPower(float leftPot, float rightPot);
 int GetRightPower(float leftPot, float rightPot);
@@ -85,7 +86,7 @@ void pre_auton()
  	wait1Msec(1000);
  	//Reconfigure Analog Port 8 as a Gyro sensor and allow time for ROBOTC to calibrate it
  	SensorType[Gyro] = sensorGyro;
- 	wait1Msec(2000);
+ 	wait1Msec(1000);
 
 	// All activities that occur before the competition starts
 	// Example: clearing encoders, setting servo positions, ...
@@ -102,36 +103,257 @@ void pre_auton()
 
 task autonomous()
 {
+		int valM = 70;
+		int valS = 150;
+		int defaultDelay = 150;
+		// int rotateV = 1150;
+
 		//static bool adjacent = false; //true if square next to drivers
-		//if (adjacent)
+
 			if (SensorValue[Jumper1] == 1)
 			{
-				motor[CubeIntake] = -50;
-				wait1Msec (500);
-				motor[CubeIntake] = 0;
-				LeftRight (45); //The robot goes forward slightly to align accurately with the skyrise section
-				wait1Msec (500); //update with sensor
-				LeftRight (0);
-				Claw (100); //Then, our claw will grab the section (NOTE: The power value will not be set to 0 in order for the claw to firmly grab the section)
-				wait1Msec (1000);
-				Lift (-90); //Lift our 	robot up
-				wait1Msec (1500); //update with sensor
-				Lift (0);
-				//Rotate (44); //Rotate towards the base
-				//wait1Msec (1000); //update with sensor
-				//Rotate (0);
-				GyroRotate(900);
-				Lift (75); //Lower our lift
-				wait1Msec (1500);
-				Lift (0);
-				Claw (-50);
-				wait1Msec (500);
-				Claw (0);
+				{ // move forward
+					SensorValue[EncoderFrontRight] = 0;
+					while(SensorValue[EncoderFrontRight] <= 150)
+					{
+						RightEdge(valM);
+					}
+
+					RightEdge(0);
+					wait1Msec (defaultDelay);
+				}
+
+				{
+					GyroRotate(-818);
+					wait1Msec (defaultDelay);
+				}
+
+					{ // move forward
+					SensorValue[EncoderFrontLeft] = 0;
+					while(SensorValue[EncoderFrontLeft] <= -40)
+					{
+						ForBack(-valM);
+					}
+
+					ForBack(0);
+					wait1Msec (defaultDelay);
+				}
+
+				{
+					Claw (127);
+					wait1Msec (1500);
+					Claw (30);
+				}
+
+				{
+
+					int moveUpTo = 500;
+
+					int savedLeftValue = SensorValue[armPotentiometerLeft];
+	 				int savedRightValue = SensorValue[armPotentiometerRight];
+
+
+					while(SensorValue[armPotentiometerLeft] < savedLeftValue + moveUpTo
+							&& SensorValue[armPotentiometerRight] < savedRightValue + moveUpTo)
+
+					{
+									Lift(-127); //Lift our 	robot up
+					}
+
+					Lift (0);
+
+					wait1Msec(500);
+
+					GyroRotate(880);
+
+					wait1Msec(1000);
+					while(SensorValue[armPotentiometerLeft] > savedLeftValue
+							&& SensorValue[armPotentiometerRight] > savedRightValue)
+
+					{
+									Lift(60); //Lift our 	robot down
+					}
+
+				}
+
+					wait1Msec(defaultDelay);
+					Lift(0);
+					wait1Msec(defaultDelay);
+					Claw(-127);
+					wait1Msec(500);
+
+					Claw(0);
+
+
+					// 2nd round
+
+					GyroRotate(-880);
+
+					Claw (127);
+					wait1Msec (1200);
+					Claw (30);
+
+
+					int moveUpTo = 500;
+					int savedLeftValue = SensorValue[armPotentiometerLeft];
+	 				int savedRightValue = SensorValue[armPotentiometerRight];
+
+
+					while(SensorValue[armPotentiometerLeft] < savedLeftValue + moveUpTo
+							&& SensorValue[armPotentiometerRight] < savedRightValue + moveUpTo)
+
+					{
+									Lift(-127); //Lift our 	robot up
+					}
+
+					Lift (0);
+
+					wait1Msec(500);
+
+					GyroRotate(880);
+
+					wait1Msec(1000);
+					while(SensorValue[armPotentiometerLeft] > (savedLeftValue + 200)
+							&& SensorValue[armPotentiometerRight] > (savedRightValue + 200))
+
+					{
+									Lift(60); //Lift our 	robot down
+					}
+
+
+					wait1Msec(defaultDelay);
+					Lift(0);
+					wait1Msec(defaultDelay);
+					Claw(-127);
+					wait1Msec(1200);
+
+					Claw(0);
+
+					while(SensorValue[armPotentiometerLeft] > (savedLeftValue)
+							&& SensorValue[armPotentiometerRight] > (savedRightValue))
+
+					{
+									Lift(60); //Lift our 	robot down
+					}
+
+					wait1Msec(defaultDelay);
+					Lift(0);
+
+
+
 			}
-			else
-			{
-				GyroRotate(900);
-			}
+
+			/*
+			GyroRotate(-1150);
+
+
+
+
+					{ // move forward
+					SensorValue[EncoderFrontRight] = 0;
+					while(SensorValue[EncoderFrontRight] >= -360)
+					{
+						ForBack(valM);
+					}
+
+					ForBack(0);
+					wait1Msec (200);
+				}
+
+				{
+					motor[CubeIntake] = -50;
+					wait1Msec (400);
+					motor[CubeIntake] = -25;
+				}
+
+
+				wait1Msec (200);
+
+				{ // move backward
+					SensorValue[EncoderFrontRight] = 0;
+					while(SensorValue[EncoderFrontRight] <= 360)
+					{
+						ForBack(-valM);
+					}
+
+					ForBack(0);
+					wait1Msec (200);
+				}
+
+
+
+					int moveUpTo = 700;
+					int savedLeftValue = SensorValue[armPotentiometerLeft];
+	 				int savedRightValue = SensorValue[armPotentiometerRight];
+
+
+					while(SensorValue[armPotentiometerLeft] < savedLeftValue + moveUpTo
+							&& SensorValue[armPotentiometerRight] < savedRightValue + moveUpTo)
+
+					{
+									Lift(-127); //Lift our 	robot up
+					}
+
+					Lift (0);
+
+					wait1Msec(1000);
+
+					GyroRotate(-320);
+
+					wait1Msec (200);
+
+					{ // move forward
+					SensorValue[EncoderFrontRight] = 0;
+					while(SensorValue[EncoderFrontRight] >= -80)
+					{
+						ForBack(valM);
+					}
+
+					ForBack(0);
+					wait1Msec (200);
+				}
+
+					wait1Msec(2000);
+					while(SensorValue[armPotentiometerLeft] > savedLeftValue
+							&& SensorValue[armPotentiometerRight] > savedRightValue)
+
+					{
+									Lift(60); //Lift our 	robot down
+					}
+
+
+					motor[CubeIntake] = 0;
+					wait1Msec(200);
+					Lift(0);
+					wait1Msec(200);
+			*/
+
+
+
+
+				//motor[CubeIntake]
+				//motor[CubeIntake] = -50;
+				//wait1Msec (500);
+				//motor[CubeIntake] = 0;
+				//LeftRight (45); //The robot goes forward slightly to align accurately with the skyrise section
+				//wait1Msec (500); //update with sensor
+				//LeftRight (0);
+				//Claw (100); //Then, our claw will grab the section (NOTE: The power value will not be set to 0 in order for the claw to firmly grab the section)
+				//wait1Msec (1000);
+				//Lift (-90); //Lift our 	robot up
+				//wait1Msec (1500); //update with sensor
+				//Lift (0);
+				////Rotate (44); //Rotate towards the base
+				////wait1Msec (1000); //update with sensor
+				////Rotate (0);
+				//GyroRotate(900);
+				//Lift (75); //Lower our lift
+				//wait1Msec (1500);
+				//Lift (0);
+				//Claw (-50);
+				//wait1Msec (500);
+				//Claw (0);
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,13 +371,13 @@ task usercontrol()
 	//bool Sopening = false;
 	//bool Sopen = false;
 	//bool Sclosing = false;
-	
+
 	bool armPotentiometerUsed = true;
 
 	bool cubeIntakeClosing = false;
 	bool crayonIntakeClosing = false;
-	
-  const int power7 = 40;
+
+  const int power7 = 50;
 	 //DefaultLeftValue = SensorValue[armPotentiometerLeft];
 	 //DefaultRightValue = SensorValue[armPotentiometerRight];
 
@@ -284,10 +506,10 @@ task usercontrol()
 			// AdjustLift();
 		}
 
+
 		int btn5u = vexRT[Btn5U];
 		int btn5d = vexRT[Btn5D];
-		// motor[CubeIntake] = (btn5u - btn5d) * 127;
-		
+
 		if (btn5u == 1)
 		{
 			cubeIntakeClosing = false;
@@ -306,11 +528,11 @@ task usercontrol()
 		{
 				motor[CubeIntake] = 0;
 		}
-	
+
 
 		int btn6u = vexRT[Btn6U];
 		int btn6d = vexRT[Btn6D];
-		
+
 		if (btn6d == 1)
 		{
 			crayonIntakeClosing = false;
@@ -329,9 +551,9 @@ task usercontrol()
 		{
 				motor[CrayonIntake] = 0;
 		}
-		
-		
-		
+
+
+
 		/*if (vexRT[Btn5D] == 1)
 		{
 			static bool adjacent = false; //true if square next to drivers
@@ -784,6 +1006,17 @@ void ForBack(int power)
     motor[BackLeft] = power;
 }
 
+
+void RightEdge(int power)
+{
+	if (SensorValue[Jumper2] == 0)
+	{
+		power = -power;
+	}
+    motor[FrontRight] = -power;
+    motor[BackLeft] = -power;
+}
+
 void LeftRight(int power)
 {
 	if (SensorValue[Jumper2] == 0)
@@ -839,10 +1072,12 @@ void Claw(int power)
     motor[CrayonIntake] = power;
 }
 
-void Lift(int power)
+void Lift(float power)
 {
-    motor[LeftLift1] = power;
-    motor[LeftLift2] = power;
-    motor[RightLift1] = power;
-    motor[RightLift2] = power;
+		float lp = power;
+		float rp = power * 0.99;
+    motor[LeftLift1] = lp;
+    motor[LeftLift2] = lp;
+    motor[RightLift1] = rp;
+    motor[RightLift2] = rp;
 }
