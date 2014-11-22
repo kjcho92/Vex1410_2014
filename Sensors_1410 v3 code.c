@@ -115,7 +115,7 @@ task autonomous()
 			{
 				{ // move forward
 					SensorValue[EncoderFrontRight] = 0;
-					while(SensorValue[EncoderFrontRight] <= 150)
+					while(SensorValue[EncoderFrontRight] <= 60)
 					{
 						RightEdge(valM);
 					}
@@ -281,7 +281,7 @@ task usercontrol()
 
      int filtered2 = vexRT[Ch2];
      int filtered4 = vexRT[Ch4];
-		
+
 		// Button7
     filtered2 = ReverseIfNeeded(filtered2);
         // filtered4 = ReverseIfNeeded(filtered4);
@@ -717,8 +717,8 @@ void RightEdge(int power)
 	{
 		power = -power;
 	}
-    motor[FrontRight] = -power;
-    motor[BackLeft] = -power;
+    motor[FrontLeft] = -power;
+    motor[BackRight] = -power;
 }
 
 void LeftRight(int power)
@@ -766,7 +766,7 @@ void GyroRotate (int angle)
 		}
 	}
 	Rotate(0);
-	
+
 }
 
 void Claw(int power)
