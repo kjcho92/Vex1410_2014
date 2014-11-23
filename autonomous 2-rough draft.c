@@ -7,11 +7,12 @@ task autonomous() // this code is for blue team-- the robot starts in the non- s
     if (SensorValue[Jumper1] == 0) // im guessing this is for the different autonomous? 
     {
       MovingFoward = false; //because this will use the claw, thought it would be easier to code if i do this
-      { // move fowards
+      { // move foward untill you reach that cube
           
         	SensorValue[EncoderFrontRight] = 0;
           while(SensorValue[EncoderFrontRight] <= # )
           {
             RightEdge(valueA);
           }
+          cubeIntakeClosing = true;
           
