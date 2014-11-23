@@ -107,15 +107,17 @@ task autonomous()
 		int valM = 70;
 		int valS = 150;
 		int defaultDelay = 150;
+		int defaultGyroRotate = 800;
 		// int rotateV = 1150;
 
 		//static bool adjacent = false; //true if square next to drivers
 
 			if (SensorValue[Jumper1] == 1)
 			{
+
 				{ // move forward
-					SensorValue[EncoderFrontRight] = 0;
-					while(SensorValue[EncoderFrontRight] <= 60)
+					SensorValue[EncoderFrontLeft] = 0;
+					while(SensorValue[EncoderFrontLeft] >= -150)
 					{
 						RightEdge(valM);
 					}
@@ -125,20 +127,20 @@ task autonomous()
 				}
 
 				{
-					GyroRotate(-818);
+					GyroRotate(-330);
 					wait1Msec (defaultDelay);
 				}
 
 					{ // move forward
-					SensorValue[EncoderFrontLeft] = 0;
-					while(SensorValue[EncoderFrontLeft] <= -40)
+					SensorValue[EncoderFrontLeft] = 0 ;
+					while(SensorValue[EncoderFrontLeft] >= -33)
 					{
 						ForBack(-valM);
 					}
 
 					ForBack(0);
 					wait1Msec (defaultDelay);
-				}
+					}
 
 				{
 					Claw (127);
@@ -165,7 +167,7 @@ task autonomous()
 
 					wait1Msec(500);
 
-					GyroRotate(880);
+					GyroRotate(defaultGyroRotate);
 
 					wait1Msec(1000);
 					while(SensorValue[armPotentiometerLeft] > savedLeftValue
@@ -188,7 +190,7 @@ task autonomous()
 
 					// 2nd round
 
-					GyroRotate(-880);
+					GyroRotate(-defaultGyroRotate);
 
 					Claw (127);
 					wait1Msec (1200);
@@ -211,7 +213,7 @@ task autonomous()
 
 					wait1Msec(500);
 
-					GyroRotate(880);
+					GyroRotate(defaultGyroRotate);
 
 					wait1Msec(1000);
 					while(SensorValue[armPotentiometerLeft] > (savedLeftValue + 200)
