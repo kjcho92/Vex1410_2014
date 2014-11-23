@@ -14,5 +14,28 @@ task autonomous() // this code is for blue team-- the robot starts in the non- s
           {
             RightEdge(valueA);
           }
-          cubeIntakeClosing = true;
           
+          RightEdge(0);
+          wait1Msec (defaultDelay);
+          
+          cubeIntakeClosing = true; //not sure how this works
+          
+          SensorValue[EncoderFrontRight] = 0;  //move back
+          while(SensorValue[EncoderFrontRight] <= -# )
+          {
+            ForBack(-valueA);
+          }
+          
+          ForBack(0);
+          wait1Msec (defaultDelay);
+          
+          int moveUpTo = #;
+          int savedLeftValue = SensorValue[armPotentiometerLeft];
+          int savedRightValue = SensorValue[armPotentiometerRight];
+          while(SensorValue[armPotentiometerLeft] < savedLeftValue + moveUpTo
+            && SensorValue[armPotentiometerRight] < savedRightValue + moveUpTo)
+          {
+            Lift(#); //Lift goes up
+          }
+          Lift (0);
+          wait1Msec(#);
