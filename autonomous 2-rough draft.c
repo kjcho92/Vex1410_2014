@@ -49,6 +49,6 @@ task autonomous() // this code is for blue team-- the robot starts in the non- s
             Lift(#); //Lift goes up
           }
           Lift (0);
-          wait1Msec(#); // add less delay so claw releases whilemoving down
-          
+          wait1Msec(#); // add less delay so claw releases while moving down
+           
           cubeIntakeClosing = false;
