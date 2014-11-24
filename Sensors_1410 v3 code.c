@@ -104,20 +104,20 @@ void pre_auton()
 
 task autonomous()
 {
+		ClearTimer(T3);
+
 		int valM = 70;
 		int valS = 150;
 		int defaultDelay = 150;
-		int defaultGyroRotate = 800;
+		int defaultGyroRotate = 750;
 		// int rotateV = 1150;
 
 		//static bool adjacent = false; //true if square next to drivers
 
-			if (SensorValue[Jumper1] == 1)
+			if (SensorValue[Jumper2] == 1) //blue
 			{
 
 				{ // move forward
-					SensorValue[EncoderFrontLeft] = 0;
-					while(SensorValue[EncoderFrontLeft] >= -150)
 					{
 						RightEdge(valM);
 					}
@@ -126,7 +126,7 @@ task autonomous()
 					wait1Msec (defaultDelay);
 				}
 
-				{
+			{
 					GyroRotate(-330);
 					wait1Msec (defaultDelay);
 				}
@@ -144,7 +144,7 @@ task autonomous()
 
 				{
 					Claw (127);
-					wait1Msec (1500);
+					wait1Msec (750);
 					Claw (30);
 				}
 
@@ -169,7 +169,7 @@ task autonomous()
 
 					GyroRotate(defaultGyroRotate);
 
-					wait1Msec(1000);
+					wait1Msec(750);
 					while(SensorValue[armPotentiometerLeft] > savedLeftValue
 							&& SensorValue[armPotentiometerRight] > savedRightValue)
 
@@ -193,7 +193,7 @@ task autonomous()
 					GyroRotate(-defaultGyroRotate);
 
 					Claw (127);
-					wait1Msec (1200);
+					wait1Msec (750);
 					Claw (30);
 
 
@@ -215,12 +215,12 @@ task autonomous()
 
 					GyroRotate(defaultGyroRotate);
 
-					wait1Msec(1000);
+					wait1Msec(500);
 					while(SensorValue[armPotentiometerLeft] > (savedLeftValue + 200)
 							&& SensorValue[armPotentiometerRight] > (savedRightValue + 200))
 
 					{
-									Lift(60); //Lift our 	robot down
+									Lift(30); //Lift our 	robot down
 					}
 
 
@@ -228,8 +228,7 @@ task autonomous()
 					Lift(0);
 					wait1Msec(defaultDelay);
 					Claw(-127);
-					wait1Msec(1200);
-
+					wait1Msec(500);
 					Claw(0);
 
 					while(SensorValue[armPotentiometerLeft] > (savedLeftValue)
@@ -660,8 +659,7 @@ void AdjustLift()
 				// motor[RightLift1] = power_Down;
 				// motor[RightLift2] = power_Down;
 
-				// ClearTimer(T1);
-				// while (time1[T1] < 300){}
+
 
 				 leftPot = GetLeftValue();
 				 rightPot = GetRightValue();
@@ -715,17 +713,30 @@ void ForBack(int power)
 
 void RightEdge(int power)
 {
-	if (SensorValue[Jumper2] == 0)
+	if (SensorValue[Jumper1] == 0) //Jumper 1 == 0 means that we are red. Otherwise, it means that we are blue
 	{
-		power = -power;
+				SensorValue[EncoderFrontRight] = 0;
+				while(SensorValue[EncoderFrontRight] <= 150)
+		{
+			motor[FrontRight] = -power;
+			motor[BackLeft] = -power;
+		}
 	}
-    motor[FrontLeft] = -power;
-    motor[BackRight] = -power;
+	else
+	{ 
+
+					SensorValue[EncoderFrontLeft] = 0;
+				while(SensorValue[EncoderFrontLeft] >= -150)
+			{
+			    motor[FrontLeft] = -power;
+			    motor[BackRight] = -power;
+			}
+    }
 }
 
 void LeftRight(int power)
 {
-	if (SensorValue[Jumper2] == 0)
+	if (SensorValue[Jumper1] == 0)
 	{
 		power = -power;
 	}
@@ -737,7 +748,7 @@ void LeftRight(int power)
 
 void Rotate(int power)
 {
-	if (SensorValue[Jumper2] == 0)
+	if (SensorValue[Jumper1] == 0)
 	{
 		power = -power;
 	}
@@ -750,7 +761,7 @@ void Rotate(int power)
 void GyroRotate (int angle)
 {
 	SensorValue[GyroDown] = 0;
-	if (SensorValue[Jumper2] == 0)	{
+	if (SensorValue[Jumper1] == 0)	{
 		angle = -angle;
 	}
 	if (SensorValue[GyroDown] < angle)
