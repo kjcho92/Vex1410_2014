@@ -46,8 +46,8 @@ void LeftRight(int power, int distance);
 void StopMoving();
 void MoveDiagonal(int power, int distance);
 void Rotate(int power);
-void PickUpSkyrise();
-void ReleaseSkyrise();
+void PickUpSkyrise(int duration);
+void ReleaseSkyrise(int duration);
 void Claw(int power);
 void StopLift();
 void AdjustAutoLift(int height);
@@ -97,9 +97,9 @@ void pre_auton()
   //bStopTasksBetweenModes = true;
 
 	//Completely clear out any previous sensor readings by setting the port to "sensorNone"
- 	SensorType[GyroDown] = sensorNone;
-	SensorType[GyroUp] = sensorNone;
- 	wait1Msec(1000);
+ 	//SensorType[GyroDown] = sensorNone;
+	//SensorType[GyroUp] = sensorNone;
+ 	//wait1Msec(1000);
  	//Reconfigure Analog Port 8 as a Gyro sensor and allow time for ROBOTC to calibrate it
  	SensorType[GyroDown] = sensorGyro;
  	SensorType[GyroUp] = sensorGyro;
@@ -124,7 +124,7 @@ task autonomous()
 
 		int valM = 70;
 		int valS = 150;
-		int defaultDelay = 150;
+		int defaultDelay = 100;
 		// BLUE: 750 ?
 		int defaultGyroRotate = -850;
 		// int rotateV = 1150;
@@ -148,34 +148,34 @@ task autonomous()
 
 					// rotate to face the autoload
 					// 330 for BLUE
-					GyroRotate(330);
+					GyroRotate(335);
 					wait1Msec (defaultDelay * 2);
 
 					// move forward to the autoload
 					// -33 for BLUE
 
 					// pick up skyrise
-					PickUpSkyrise();
+					PickUpSkyrise(650);
 
 					// Lift up
-					int moveUpTo = 480;
+					int moveUpTo = 420;
 					int savedLeftValue = SensorValue[armPotentiometerLeft];
 	 				int savedRightValue = SensorValue[armPotentiometerRight];
 					LiftUp(-127, savedLeftValue + moveUpTo, savedRightValue + moveUpTo); // Lift up
-					wait1Msec(500);
+					wait1Msec(300);
 
 					// rotate to the skyrise base
 					GyroRotate(defaultGyroRotate);
-					wait1Msec(750);
+					wait1Msec(300);
 
 					// lift down to the base
-					LiftDown(60, savedLeftValue, savedRightValue); //Lift our 	robot down
+					LiftDown(127, savedLeftValue, savedRightValue); //Lift our 	robot down
 					wait1Msec(defaultDelay);
 
-					ReleaseSkyrise();
-					wait1Msec(defaultDelay);
-					
-					
+					ReleaseSkyrise(550);
+					// wait1Msec(defaultDelay);
+
+
 					writeDebugStream("T3 - 0: %d	", time1[T3]);
 
 					//////////////////////////////////////////////////////////////
@@ -185,35 +185,35 @@ task autonomous()
 					{
 						GyroRotate(-defaultGyroRotate);
 						wait1Msec (defaultDelay * 2);
-						
-						PickUpSkyrise();
+
+						PickUpSkyrise(650);
 						// wait1Msec(500);
 
-						int differenceMoveUp = moveUpTo + (100 * i);
+						int differenceMoveUp = moveUpTo + (60 * i);
 						int leftHeight = savedLeftValue + differenceMoveUp;
 						int rightHeight = savedRightValue + differenceMoveUp;
 						LiftUp(-127, leftHeight, rightHeight); //Lift up
-						wait1Msec(500);
+						wait1Msec(300);
 
 											// rotate to the skyrise base
 
 						GyroRotate(defaultGyroRotate);
-						wait1Msec(500);
+						wait1Msec(300);
 
 						LiftDown(30, leftHeight - 270, rightHeight - 270); //Lift our 	robot down
 						wait1Msec(defaultDelay);
 
-						ReleaseSkyrise();
+						ReleaseSkyrise(100);
 
 						// lift down to the base
-						LiftDown(60, savedLeftValue, savedRightValue); //Lift our 	robot down
-						
-						
+						LiftDown(127, savedLeftValue, savedRightValue); //Lift our 	robot down
+
+
 						writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
 					}
 			}
 
-	
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -793,17 +793,17 @@ void GyroRotate(int angle)
 	StopMoving();
 }
 
-void PickUpSkyrise()
+void PickUpSkyrise(int duration)
 {
 		Claw(127);
-		wait1Msec(750);
+		wait1Msec(duration);
 		Claw(30);
 }
 
-void ReleaseSkyrise()
+void ReleaseSkyrise(int duration)
 {
 		Claw(-127);
-		wait1Msec(500);
+		wait1Msec(duration);
 		Claw(0);
 }
 
