@@ -1,7 +1,7 @@
 #pragma config(Sensor, in1,    armPotentiometerLeft, sensorPotentiometer)
 #pragma config(Sensor, in2,    armPotentiometerRight, sensorPotentiometer)
 #pragma config(Sensor, in3,    GyroDown,       sensorNone)
-#pragma config(Sensor, in4,    GyroUp,         sensorGyro)
+#pragma config(Sensor, in4,    GyroUp,         sensorNone)
 #pragma config(Sensor, in5,    CubeIntakePotentiometer, sensorPotentiometer)
 #pragma config(Sensor, dgtl1,  EncoderFrontLeft, sensorQuadEncoder)
 #pragma config(Sensor, dgtl3,  EncoderFrontRight, sensorQuadEncoder)
@@ -39,16 +39,29 @@
 int DefaultLeftValue = 0;
 int DefaultRightValue = 0;
 
-void ForBack (int power);
-void LeftRight (int power);
-void RightEdge (int power);
-void Rotate (int power);
-void Claw (int power);
-void Lift (float power);
-int LiftAdjust (int thisP, int otherP);
+////////////////////////////////////////////////////
+/// Autonomous mode
+void ForBack(int power, int distance);
+void LeftRight(int power, int distance);
+void StopMoving();
+void MoveDiagonal(int power, int distance);
+void Rotate(int power);
+void PickUpSkyrise();
+void ReleaseSkyrise();
+void Claw(int power);
+void StopLift();
+void AdjustAutoLift(int height);
+void LiftUp(float power, int left, int right);
+void LiftDown(float power, int left, int right);
+void GyroRotate(int angle);
+////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////
+/// Drive mode
+int LiftAdjust(int thisP, int otherP);
 int GetLeftPower(float leftPot, float rightPot);
 int GetRightPower(float leftPot, float rightPot);
-void GyroRotate(int angle);
 
 int ReverseIfNeeded(int power);
 
@@ -57,6 +70,7 @@ float GetRightValue();
 void AdjustLift();
 
 bool MovingForward = true;
+////////////////////////////////////////////////////
 
 
 typedef enumWord {
@@ -84,9 +98,11 @@ void pre_auton()
 
 	//Completely clear out any previous sensor readings by setting the port to "sensorNone"
  	SensorType[GyroDown] = sensorNone;
+	SensorType[GyroUp] = sensorNone;
  	wait1Msec(1000);
  	//Reconfigure Analog Port 8 as a Gyro sensor and allow time for ROBOTC to calibrate it
  	SensorType[GyroDown] = sensorGyro;
+ 	SensorType[GyroUp] = sensorGyro;
  	wait1Msec(1000);
 
 	// All activities that occur before the competition starts
@@ -109,142 +125,95 @@ task autonomous()
 		int valM = 70;
 		int valS = 150;
 		int defaultDelay = 150;
-		int defaultGyroRotate = 750;
+		// BLUE: 750 ?
+		int defaultGyroRotate = -850;
 		// int rotateV = 1150;
 
 		//static bool adjacent = false; //true if square next to drivers
 
-			if (SensorValue[Jumper2] == 1) //blue
+			if (SensorValue[Jumper2] == 1) //run the first autonomous
 			{
-
-				{ // move forward
-					{
-						RightEdge(valM);
-					}
-
-					RightEdge(0);
+					// move Diagonal to put the cube
+					// was 130
+					MoveDiagonal(valM, 140);
 					wait1Msec (defaultDelay);
-				}
 
-			{
-					GyroRotate(-330);
+					// move forward to the autoload
+					// -33 for BLUE
+					ForBack(-valM, -45);
 					wait1Msec (defaultDelay);
-				}
 
-					{ // move forward
-					SensorValue[EncoderFrontLeft] = 0 ;
-					while(SensorValue[EncoderFrontLeft] >= -33)
-					{
-						ForBack(-valM);
-					}
+					// LeftRight(valM, 1);
+					// wait1Msec (defaultDelay);
 
-					ForBack(0);
-					wait1Msec (defaultDelay);
-					}
+					// rotate to face the autoload
+					// 330 for BLUE
+					GyroRotate(330);
+					wait1Msec (defaultDelay * 2);
 
-				{
-					Claw (127);
-					wait1Msec (750);
-					Claw (30);
-				}
+					// move forward to the autoload
+					// -33 for BLUE
 
-				{
+					// pick up skyrise
+					PickUpSkyrise();
 
-					int moveUpTo = 500;
-
+					// Lift up
+					int moveUpTo = 480;
 					int savedLeftValue = SensorValue[armPotentiometerLeft];
 	 				int savedRightValue = SensorValue[armPotentiometerRight];
-
-
-					while(SensorValue[armPotentiometerLeft] < savedLeftValue + moveUpTo
-							&& SensorValue[armPotentiometerRight] < savedRightValue + moveUpTo)
-
-					{
-									Lift(-127); //Lift our 	robot up
-					}
-
-					Lift (0);
-
+					LiftUp(-127, savedLeftValue + moveUpTo, savedRightValue + moveUpTo); // Lift up
 					wait1Msec(500);
 
+					// rotate to the skyrise base
 					GyroRotate(defaultGyroRotate);
-
 					wait1Msec(750);
-					while(SensorValue[armPotentiometerLeft] > savedLeftValue
-							&& SensorValue[armPotentiometerRight] > savedRightValue)
 
+					// lift down to the base
+					LiftDown(60, savedLeftValue, savedRightValue); //Lift our 	robot down
+					wait1Msec(defaultDelay);
+
+					ReleaseSkyrise();
+					wait1Msec(defaultDelay);
+					
+					
+					writeDebugStream("T3 - 0: %d	", time1[T3]);
+
+					//////////////////////////////////////////////////////////////
+					///2nd round
+					//////////////////////////////////////////////////////////////
+					for (int i = 1; i <= 1; i++)
 					{
-									Lift(60); //Lift our 	robot down
+						GyroRotate(-defaultGyroRotate);
+						wait1Msec (defaultDelay * 2);
+						
+						PickUpSkyrise();
+						// wait1Msec(500);
+
+						int differenceMoveUp = moveUpTo + (100 * i);
+						int leftHeight = savedLeftValue + differenceMoveUp;
+						int rightHeight = savedRightValue + differenceMoveUp;
+						LiftUp(-127, leftHeight, rightHeight); //Lift up
+						wait1Msec(500);
+
+											// rotate to the skyrise base
+
+						GyroRotate(defaultGyroRotate);
+						wait1Msec(500);
+
+						LiftDown(30, leftHeight - 270, rightHeight - 270); //Lift our 	robot down
+						wait1Msec(defaultDelay);
+
+						ReleaseSkyrise();
+
+						// lift down to the base
+						LiftDown(60, savedLeftValue, savedRightValue); //Lift our 	robot down
+						
+						
+						writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
 					}
-
-				}
-
-					wait1Msec(defaultDelay);
-					Lift(0);
-					wait1Msec(defaultDelay);
-					Claw(-127);
-					wait1Msec(500);
-
-					Claw(0);
-
-
-					// 2nd round
-
-					GyroRotate(-defaultGyroRotate);
-
-					Claw (127);
-					wait1Msec (750);
-					Claw (30);
-
-
-					int moveUpTo = 500;
-					int savedLeftValue = SensorValue[armPotentiometerLeft];
-	 				int savedRightValue = SensorValue[armPotentiometerRight];
-
-
-					while(SensorValue[armPotentiometerLeft] < savedLeftValue + moveUpTo
-							&& SensorValue[armPotentiometerRight] < savedRightValue + moveUpTo)
-
-					{
-									Lift(-127); //Lift our 	robot up
-					}
-
-					Lift (0);
-
-					wait1Msec(500);
-
-					GyroRotate(defaultGyroRotate);
-
-					wait1Msec(500);
-					while(SensorValue[armPotentiometerLeft] > (savedLeftValue + 200)
-							&& SensorValue[armPotentiometerRight] > (savedRightValue + 200))
-
-					{
-									Lift(30); //Lift our 	robot down
-					}
-
-
-					wait1Msec(defaultDelay);
-					Lift(0);
-					wait1Msec(defaultDelay);
-					Claw(-127);
-					wait1Msec(500);
-					Claw(0);
-
-					while(SensorValue[armPotentiometerLeft] > (savedLeftValue)
-							&& SensorValue[armPotentiometerRight] > (savedRightValue))
-
-					{
-									Lift(60); //Lift our 	robot down
-					}
-
-					wait1Msec(defaultDelay);
-					Lift(0);
-
-
-
 			}
 
+	
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -702,84 +671,140 @@ int LiftAdjust (int thisP, int otherP)
 //
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
-void ForBack(int power)
+void ForBack(int power, int distance)
 {
-    motor[FrontLeft] = power;
-    motor[FrontRight] = power;
-    motor[BackRight] = power;
-    motor[BackLeft] = power;
+	SensorValue[EncoderFrontLeft] = 0 ;
+	while(SensorValue[EncoderFrontLeft] > distance)
+	{
+		motor[FrontLeft] = power;
+		motor[FrontRight] = power;
+		motor[BackRight] = power;
+		motor[BackLeft] = power;
+	}
+
+	StopMoving();
 }
 
-
-void RightEdge(int power)
+void StopMoving()
 {
-	if (SensorValue[Jumper1] == 0) //Jumper 1 == 0 means that we are red. Otherwise, it means that we are blue
+		motor[FrontLeft] = 0;
+		motor[FrontRight] = 0;
+		motor[BackRight] = 0;
+		motor[BackLeft] = 0;
+}
+
+void MoveDiagonal(int power, int distance)
+{
+	if (power > 0) // When power is 0, we should stop immediately
 	{
-				SensorValue[EncoderFrontRight] = 0;
-				while(SensorValue[EncoderFrontRight] <= 150)
+		if (SensorValue[Jumper1] == 0) //Jumper 1 == 0 means that we are red. Otherwise, it means that we are blue
 		{
-			motor[FrontRight] = -power;
-			motor[BackLeft] = -power;
+			SensorValue[EncoderFrontRight] = 0;
+			while(SensorValue[EncoderFrontRight] <= distance)
+			{
+				motor[FrontRight] = -power;
+				motor[BackLeft] = -power;
+			}
+		}
+		else
+		{
+			SensorValue[EncoderFrontLeft] = 0;
+			while(SensorValue[EncoderFrontLeft] >= -distance)
+			{
+				motor[FrontLeft] = -power;
+				motor[BackRight] = -power;
+			}
 		}
 	}
-	else
-	{ 
 
-					SensorValue[EncoderFrontLeft] = 0;
-				while(SensorValue[EncoderFrontLeft] >= -150)
-			{
-			    motor[FrontLeft] = -power;
-			    motor[BackRight] = -power;
-			}
-    }
+	StopMoving();
 }
 
-void LeftRight(int power)
+void LeftRight(int power, int distance)
 {
-	if (SensorValue[Jumper1] == 0)
+	if (power != 0) // When power is 0, we should stop immediately
 	{
-		power = -power;
+		if (SensorValue[Jumper1] == 0) //Jumper 1 == 0 means that we are red. Otherwise, it means that we are blue
+		{ // Red
+			power = -power;
+			SensorValue[EncoderFrontRight] = 0;
+			while(SensorValue[EncoderFrontRight] > -distance)
+			{
+		   	motor[FrontLeft] = power;
+		    motor[FrontRight] = -power;
+		    motor[BackRight] = power;
+		    motor[BackLeft] = -power;
+		   }
+		}
+		else
+		{
+			SensorValue[EncoderFrontRight] = 0;
+			while(SensorValue[EncoderFrontRight] < distance)
+			{
+		   	motor[FrontLeft] = power;
+		    motor[FrontRight] = -power;
+		    motor[BackRight] = power;
+		    motor[BackLeft] = -power;
+		   }
+		}
 	}
-    motor[FrontLeft] = power;
-    motor[FrontRight] = -power;
-    motor[BackRight] = power;
-    motor[BackLeft] = -power;
+
+	StopMoving();
 }
 
 void Rotate(int power)
 {
-	if (SensorValue[Jumper1] == 0)
-	{
-		power = -power;
-	}
+//	if (SensorValue[Jumper1] == 0)
+//	{
+//		power = -power;
+//	}
     motor[FrontLeft] = power;
     motor[FrontRight] = -power;
     motor[BackRight] = -power;
     motor[BackLeft] = power;
 }
 
-void GyroRotate (int angle)
+void GyroRotate(int angle)
 {
 	SensorValue[GyroDown] = 0;
-	if (SensorValue[Jumper1] == 0)	{
+	int power = 50;
+
+	if (SensorValue[Jumper1] == 1)
+	{	// Blue
 		angle = -angle;
+		power = -power;
 	}
-	if (SensorValue[GyroDown] < angle)
+
+	if (angle > 0)
 	{
 		while (SensorValue[GyroDown] < angle)
 		{
-			Rotate(50);
+			Rotate(power);
 		}
 	}
-	else if (SensorValue[GyroDown] > angle)
+	else
 	{
 		while (SensorValue[GyroDown] > angle)
 		{
-			Rotate(-50);
+			Rotate(-power);
 		}
 	}
-	Rotate(0);
 
+	StopMoving();
+}
+
+void PickUpSkyrise()
+{
+		Claw(127);
+		wait1Msec(750);
+		Claw(30);
+}
+
+void ReleaseSkyrise()
+{
+		Claw(-127);
+		wait1Msec(500);
+		Claw(0);
 }
 
 void Claw(int power)
@@ -787,12 +812,70 @@ void Claw(int power)
     motor[CrayonIntake] = power;
 }
 
-void Lift(float power)
+void StopLift()
+{
+		motor[LeftLift1] = 0;
+    motor[RightLift1] = 0;
+		motor[LeftLift2] = 0;
+    motor[RightLift2] = 0;
+}
+
+void AdjustAutoLift(int height)
+{
+		float power = -100;
+
+		while (SensorValue[armPotentiometerLeft] < height)
+		{
+			  motor[LeftLift1] = power;
+		    motor[LeftLift2] = power;
+		}
+
+		motor[LeftLift1] = 0;
+		motor[LeftLift2] = 0;
+
+
+		//while (SensorValue[armPotentiometerRight] < height)
+		//{
+		//	  motor[RightLift1] = power;
+		//    motor[RightLift2] = power;
+		//}
+
+		//motor[RightLift1] = 0;
+		//motor[RightLift2] = 0;
+
+}
+
+void LiftUp(float power, int left, int right)
 {
 		float lp = power;
-		float rp = power * 0.99;
-    motor[LeftLift1] = lp;
-    motor[LeftLift2] = lp;
-    motor[RightLift1] = rp;
-    motor[RightLift2] = rp;
+		float rp = power * 0.75;
+
+		while(SensorValue[armPotentiometerLeft] < left
+				&& SensorValue[armPotentiometerRight] < right)
+		{
+		    motor[LeftLift1] = lp;
+		    motor[RightLift1] = rp;
+		    motor[LeftLift2] = lp;
+		    motor[RightLift2] = rp;
+		}
+
+		StopLift();
+	//	AdjustAutoLift(SensorValue[armPotentiometerRight]);
+}
+
+void LiftDown(float power, int left, int right)
+{
+	float lp = power;
+	float rp = power * 0.8;
+
+		while(SensorValue[armPotentiometerLeft] > left
+				&& SensorValue[armPotentiometerRight] > right)
+		{
+		    motor[LeftLift1] = lp;
+		    motor[RightLift1] = rp;
+		    motor[LeftLift2] = lp;
+		    motor[RightLift2] = rp;
+		}
+
+		StopLift();
 }
