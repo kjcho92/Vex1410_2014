@@ -103,7 +103,7 @@ void pre_auton()
  	//Reconfigure Analog Port 8 as a Gyro sensor and allow time for ROBOTC to calibrate it
  	SensorType[GyroDown] = sensorGyro;
  	SensorType[GyroUp] = sensorGyro;
- 	wait1Msec(1000);
+ 	wait1Msec(500);
 
 	// All activities that occur before the competition starts
 	// Example: clearing encoders, setting servo positions, ...
@@ -123,95 +123,115 @@ task autonomous()
 		ClearTimer(T3);
 
 		int valM = 70;
-		int valS = 150;
-		int defaultDelay = 100;
+		int defaultDelay = 80;
 		// BLUE: 750 ?
 		int defaultGyroRotate = -850;
+		int initialGyroRotate = 335;
+		int initialForward = -45;
 		// int rotateV = 1150;
 
 		//static bool adjacent = false; //true if square next to drivers
 
-			if (SensorValue[Jumper2] == 1) //run the first autonomous
-			{
-					// move Diagonal to put the cube
-					// was 130
-					MoveDiagonal(valM, 140);
+		bool isBlue = false;
+		if (SensorValue[Jumper1] == 1)
+		{ // Initialize for Blue
+			isBlue = true;
+			defaultGyroRotate = -780;
+			initialGyroRotate = 360;
+			initialForward = -48;
+		}
+
+		if (SensorValue[Jumper2] == 1) //run the first autonomous
+		{
+				// move Diagonal to put the cube
+				// was 130
+				MoveDiagonal(valM, 140);
+				wait1Msec (defaultDelay);
+
+				// move forward to the autoload
+				// -33 for BLUE
+				ForBack(-valM, initialForward);
+				wait1Msec (defaultDelay);
+
+				// LeftRight(valM, 1);
+				// wait1Msec (defaultDelay);
+
+				// rotate to face the autoload
+				// 330 for BLUE
+				GyroRotate(initialGyroRotate);
+
+				wait1Msec (defaultDelay * 3);
+
+				// move forward to the autoload
+				// -33 for BLUE
+
+				// pick up skyrise
+				PickUpSkyrise(650);
+
+				// Lift up
+				int moveUpTo = 420;
+				int savedLeftValue = SensorValue[armPotentiometerLeft];
+ 				int savedRightValue = SensorValue[armPotentiometerRight];
+				LiftUp(-127, savedLeftValue + moveUpTo, savedRightValue + moveUpTo); // Lift up
+				wait1Msec(defaultDelay * 3);
+
+				// rotate to the skyrise base
+				GyroRotate(defaultGyroRotate);
+				wait1Msec(defaultDelay * 3);
+
+				// lift down to the base
+				LiftDown(127, savedLeftValue, savedRightValue); //Lift our 	robot down
+				wait1Msec(defaultDelay);
+
+				ReleaseSkyrise(550);
+				// wait1Msec(defaultDelay);
+
+
+				writeDebugStream("T3 - 0: %d	", time1[T3]);
+
+				//////////////////////////////////////////////////////////////
+				///2nd round
+				//////////////////////////////////////////////////////////////
+				// Need to increase for programming skill
+				// i <= 7
+				for (int i = 1; i <= 1; i++)
+				{
+					int single = 50;
+					int multiple = 90;
+					GyroRotate(-defaultGyroRotate);
 					wait1Msec (defaultDelay);
 
-					// move forward to the autoload
-					// -33 for BLUE
-					ForBack(-valM, -45);
-					wait1Msec (defaultDelay);
-
-					// LeftRight(valM, 1);
-					// wait1Msec (defaultDelay);
-
-					// rotate to face the autoload
-					// 330 for BLUE
-					GyroRotate(335);
-					wait1Msec (defaultDelay * 2);
-
-					// move forward to the autoload
-					// -33 for BLUE
-
-					// pick up skyrise
 					PickUpSkyrise(650);
+					// wait1Msec(500);
 
-					// Lift up
-					int moveUpTo = 420;
-					int savedLeftValue = SensorValue[armPotentiometerLeft];
-	 				int savedRightValue = SensorValue[armPotentiometerRight];
-					LiftUp(-127, savedLeftValue + moveUpTo, savedRightValue + moveUpTo); // Lift up
-					wait1Msec(300);
+					// Need to increase for programming skill
+					// multiple
+					int differenceMoveUp = moveUpTo + (single * i);
+					int leftHeight = savedLeftValue + differenceMoveUp;
+					int rightHeight = savedRightValue + differenceMoveUp;
+					LiftUp(-127, leftHeight, rightHeight); //Lift up
+					GyroRotate(defaultGyroRotate);
+					wait1Msec(defaultDelay * 3);
 
 					// rotate to the skyrise base
-					GyroRotate(defaultGyroRotate);
-					wait1Msec(300);
 
-					// lift down to the base
-					LiftDown(127, savedLeftValue, savedRightValue); //Lift our 	robot down
+					
+					wait1Msec(defaultDelay * 3);
+
+					LiftDown(30, leftHeight - 270, rightHeight - 270); //Lower our 	robot down
 					wait1Msec(defaultDelay);
 
-					ReleaseSkyrise(550);
-					// wait1Msec(defaultDelay);
+					// Need to increase for programming skill
+					// 550
+					ReleaseSkyrise(20);
+
+					// Lower down to the base
+					LiftDown(127, savedLeftValue, savedRightValue); //Lift our 	robot down
 
 
-					writeDebugStream("T3 - 0: %d	", time1[T3]);
-
-					//////////////////////////////////////////////////////////////
-					///2nd round
-					//////////////////////////////////////////////////////////////
-					for (int i = 1; i <= 1; i++)
-					{
-						GyroRotate(-defaultGyroRotate);
-						wait1Msec (defaultDelay);
-
-						PickUpSkyrise(650);
-						// wait1Msec(500);
-
-						int differenceMoveUp = moveUpTo + (50);
-						int leftHeight = savedLeftValue + differenceMoveUp;
-						int rightHeight = savedRightValue + differenceMoveUp;
-						LiftUp(-127, leftHeight, rightHeight); //Lift up
-						GyroRotate(defaultGyroRotate); // rotate to the skyrise base
-						wait1Msec(300);
-
-											
-
-						
-
-						LiftDown(30, leftHeight - 270, rightHeight - 270); //Lower our robot down
-						wait1Msec(defaultDelay);
-
-						ReleaseSkyrise(100);
-
-						// lower down to the base
-						LiftDown(127, savedLeftValue, savedRightValue); //Lift our robot down
-
-
-						writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
-					}
-			}
+					writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
+				}
+		}
 
 
 }
@@ -769,24 +789,43 @@ void GyroRotate(int angle)
 	SensorValue[GyroDown] = 0;
 	int power = 50;
 
-	if (SensorValue[Jumper1] == 1)
-	{	// Blue
-		angle = -angle;
-		power = -power;
-	}
-
-	if (angle > 0)
+	if (SensorValue[Jumper1] == 0)
 	{
-		while (SensorValue[GyroDown] < angle)
+		if (angle > 0)
 		{
-			Rotate(power);
+			while (SensorValue[GyroDown] < angle)
+			{
+				Rotate(power);
+			}
+		}
+		else
+		{
+			power = -power;
+			while (SensorValue[GyroDown] > angle)
+			{
+				Rotate(power);
+			}
 		}
 	}
 	else
 	{
-		while (SensorValue[GyroDown] > angle)
+		// Blue
+		angle = -angle;
+
+		if (angle > 0)
 		{
-			Rotate(-power);
+			while (SensorValue[GyroDown] < angle)
+			{
+				Rotate(power);
+			}
+		}
+		else
+		{
+			power = -power;
+			while (SensorValue[GyroDown] > angle)
+			{
+				Rotate(power);
+			}
 		}
 	}
 
