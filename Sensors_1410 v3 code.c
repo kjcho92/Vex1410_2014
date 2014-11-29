@@ -184,29 +184,29 @@ task autonomous()
 					for (int i = 1; i <= 1; i++)
 					{
 						GyroRotate(-defaultGyroRotate);
-						wait1Msec (defaultDelay * 2);
+						wait1Msec (defaultDelay);
 
 						PickUpSkyrise(650);
 						// wait1Msec(500);
 
-						int differenceMoveUp = moveUpTo + (60 * i);
+						int differenceMoveUp = moveUpTo + (50);
 						int leftHeight = savedLeftValue + differenceMoveUp;
 						int rightHeight = savedRightValue + differenceMoveUp;
 						LiftUp(-127, leftHeight, rightHeight); //Lift up
+						GyroRotate(defaultGyroRotate); // rotate to the skyrise base
 						wait1Msec(300);
 
-											// rotate to the skyrise base
+											
 
-						GyroRotate(defaultGyroRotate);
-						wait1Msec(300);
+						
 
-						LiftDown(30, leftHeight - 270, rightHeight - 270); //Lift our 	robot down
+						LiftDown(30, leftHeight - 270, rightHeight - 270); //Lower our robot down
 						wait1Msec(defaultDelay);
 
 						ReleaseSkyrise(100);
 
-						// lift down to the base
-						LiftDown(127, savedLeftValue, savedRightValue); //Lift our 	robot down
+						// lower down to the base
+						LiftDown(127, savedLeftValue, savedRightValue); //Lift our robot down
 
 
 						writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
@@ -531,7 +531,7 @@ void AdjustLift()
 	float leftPot = GetLeftValue();
   float rightPot = GetRightValue();
 
-    // skip adjustment, if the lifts are too low or too higt.
+    // skip adjustment, if the lifts are too low or too high.
   if (leftPot <= 100 || rightPot <=100 || leftPot >= 1500 || rightPot >= 1500)
   {
   	return;
