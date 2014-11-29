@@ -121,9 +121,12 @@ void pre_auton()
 task autonomous()
 {
 		ClearTimer(T3);
-
 		int valM = 70;
-		int defaultDelay = 80;
+				
+		if (SensorValue[Jumper2] == 1)
+	{
+		int valM = 70;
+		int defaultDelay = 100;
 		// BLUE: 750 ?
 		int defaultGyroRotate = -850;
 		int initialGyroRotate = 335;
@@ -136,9 +139,9 @@ task autonomous()
 		if (SensorValue[Jumper1] == 1)
 		{ // Initialize for Blue
 			isBlue = true;
-			defaultGyroRotate = -780;
-			initialGyroRotate = 360;
-			initialForward = -48;
+			defaultGyroRotate = -805;
+			initialGyroRotate = 400;
+			initialForward = -68;
 		}
 
 		if (SensorValue[Jumper2] == 1) //run the first autonomous
@@ -166,7 +169,7 @@ task autonomous()
 				// -33 for BLUE
 
 				// pick up skyrise
-				PickUpSkyrise(650);
+				PickUpSkyrise(700);
 
 				// Lift up
 				int moveUpTo = 420;
@@ -194,14 +197,14 @@ task autonomous()
 				//////////////////////////////////////////////////////////////
 				// Need to increase for programming skill
 				// i <= 7
-				for (int i = 1; i <= 1; i++)
+				for (int i = 1; i <= 5; i++)
 				{
-					int single = 50;
+					int single = 80;
 					int multiple = 90;
 					GyroRotate(-defaultGyroRotate);
 					wait1Msec (defaultDelay);
 
-					PickUpSkyrise(650);
+					PickUpSkyrise(700);
 					// wait1Msec(500);
 
 					// Need to increase for programming skill
@@ -215,7 +218,7 @@ task autonomous()
 
 					// rotate to the skyrise base
 
-					
+
 					wait1Msec(defaultDelay * 3);
 
 					LiftDown(30, leftHeight - 270, rightHeight - 270); //Lower our 	robot down
@@ -223,7 +226,7 @@ task autonomous()
 
 					// Need to increase for programming skill
 					// 550
-					ReleaseSkyrise(20);
+					ReleaseSkyrise(550);
 
 					// Lower down to the base
 					LiftDown(127, savedLeftValue, savedRightValue); //Lift our 	robot down
@@ -232,7 +235,59 @@ task autonomous()
 					writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
 				}
 		}
-
+}
+else
+{
+	LiftUp(-127)
+	// CloseCubeInTake // new method
+	
+  int valueA = x; //power levels 
+  int valueB = y;
+  
+      MovingFoward = false;//because this will use the claw, thought it would be easier to code if i do this
+      { // move foward untill you reach that cube
+          
+      
+      	ForBack(valM, -50);
+       
+      	wait1Msec (defaultDelay);
+          
+      	// PickUpCube // need a new function
+          cubeIntakeClosing = true; //not sure how this works
+          
+          SensorValue[EncoderFrontRight] = 0;  //move back
+          while(SensorValue[EncoderFrontRight] <= -# )
+          {
+            ForBack(-valueA);
+          }
+          
+          ForBack(0);
+          wait1Msec (defaultDelay);
+          
+          int moveUpTo = #;
+          int savedLeftValue = SensorValue[armPotentiometerLeft];
+          int savedRightValue = SensorValue[armPotentiometerRight];
+          while(SensorValue[armPotentiometerLeft] < savedLeftValue + moveUpTo
+            && SensorValue[armPotentiometerRight] < savedRightValue + moveUpTo)
+          {
+            Lift(-#); //Lift goes up
+          }
+          Lift (0);
+          wait1Msec(#);
+          
+          GyroRotate( # );
+          wait1Msec(#);
+          
+          while(SensorValue[armPotentiometerLeft] < savedLeftValue + moveUpTo
+            && SensorValue[armPotentiometerRight] < savedRightValue + moveUpTo)
+          {
+            Lift(#); //Lift goes up
+          }
+          Lift (0);
+          wait1Msec(#); // add less delay so claw releases while moving down
+           
+          cubeIntakeClosing = false;
+	}
 
 }
 
