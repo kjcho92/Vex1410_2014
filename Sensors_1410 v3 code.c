@@ -973,3 +973,18 @@ void LiftDown(float power, int left, int right)
 
 		StopLift();
 }
+
+
+void PickUpCube(int duration,int power) //pick cube up and stuff
+{
+motor[CubeIntakeIntake] =power;
+wait1Msec(duration);
+motor[CubeIntakeIntake] = 30;
+}
+
+void ReleaseCube(int duration,int power)
+{
+motor[CubeIntakeIntake] = power;
+wait1Msec(duration);
+motor[CubeIntakeIntake] = 0;
+}
