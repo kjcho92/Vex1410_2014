@@ -97,7 +97,6 @@ ACTIONS PreviousAction;
 
 void pre_auton()
 {
-	ClearTimer(T3);
   // Set bStopTasksBetweenModes to false if you want to keep user created tasks running between
   // Autonomous and Tele-Op modes. You will need to manage all user created tasks if set to false.
   //bStopTasksBetweenModes = true;
@@ -150,47 +149,81 @@ void pre_auton()
 
 task autonomous()
 {
+		ClearTimer(T3);
 
-
-		int valM = 70;
-		int valS = 120;
+		int defaultMovePower= 70;
 		int defaultDelay = 100;
-		// BLUE: 750 ?
-		int defaultGyroRotate = -800;
-		int initialGyroRotate = 280;
-		int initialForward = -5;
-		int iteration_defaultGyroRotate = -840;
+
+		//////////////////////
+		/// RED RED RED RED RED
+		/// RED RED RED RED RED
+		/// RED RED RED RED RED
+ 		bool isBlue = false;
+		int initialmoveDiagonalDistance = 155;
+ 		int initialForwardDistance = 0;
+		int initialmoveLeftDistance = 20;
+
+		int initialGyroRotate = 250;
+		int defaultGyroRotate = -700;
+
+		int iteration_defaultGyroRotate = -660;
 		int finalMove = 0;
-		// int rotateV = 1150;
 
-		//static bool adjacent = false; //true if square next to drivers
+		//////////////////////
+		/// RED RED RED RED RED
+		/// RED RED RED RED RED
+		/// RED RED RED RED RED
+		//////////////////////
 
-		bool isBlue = false;
+		//////////////////////
+		/// BLUE BLUE BLUE BLUE BLUE
+		/// BLUE BLUE BLUE BLUE BLUE
+		/// BLUE BLUE BLUE BLUE BLUE
+		//////////////////////
+
 		if (SensorValue[Jumper1] == 1)
 		{ // Initialize for Blue
 			isBlue = true;
-			defaultGyroRotate = -780;
-			iteration_defaultGyroRotate = -720;
-			initialGyroRotate = 360;
-			initialForward = -40;
-			valS = 180;
-			valM = 70;
-			finalMove = 70;
+
+			initialmoveLeftDistance = 30;
+			initialmoveDiagonalDistance = 230;
+			initialForwardDistance = 0;
+
+			initialGyroRotate = 395;
+			defaultGyroRotate = -755;
+
+			iteration_defaultGyroRotate = -705;
+			finalMove = 50;
 		}
+		//////////////////////
+		/// BLUE BLUE BLUE BLUE BLUE
+		/// BLUE BLUE BLUE BLUE BLUE
+		/// BLUE BLUE BLUE BLUE BLUE
+		//////////////////////
+
 
 		if (SensorValue[Jumper2] == 1) //run the first autonomous
 		{
 				// move Diagonal to put the cube
 				// was 130
-				MoveDiagonal(valM, valS);
+				MoveDiagonal(defaultMovePower, initialmoveDiagonalDistance);
 				wait1Msec (defaultDelay);
 
 //				MoveDiagonalReverse(-valM, 20);
 
 				// move forward to the autoload
 				// -33 for BLUE
-				ForBack(-valM, initialForward);
-				wait1Msec (defaultDelay);
+
+				if (SensorValue[Jumper1] == 0)
+				{ // need only for RED
+					LeftRight(-defaultMovePower, -initialmoveLeftDistance);
+					wait1Msec (defaultDelay);
+				}
+				else
+				{
+					ForBack(-defaultMovePower, initialForwardDistance);
+					wait1Msec (defaultDelay);
+				}
 
 				// LeftRight(valM, 1);
 				// wait1Msec (defaultDelay);
@@ -205,7 +238,7 @@ task autonomous()
 				// -33 for BLUE
 
 				// pick up skyrise
-				PickUpSkyrise(750);
+				PickUpSkyrise(800);
 				wait1Msec (defaultDelay);
 
 				// Lift up
@@ -250,7 +283,7 @@ task autonomous()
 					GyroRotate(-iteration_defaultGyroRotate);
 					wait1Msec (defaultDelay);
 
-					PickUpSkyrise(750);
+					PickUpSkyrise(800);
 					wait1Msec (defaultDelay);
 					// wait1Msec(500);
 
@@ -269,10 +302,10 @@ task autonomous()
 
 					wait1Msec(defaultDelay * 3);
 // adding
-					ForBack(finalMove, -50);
+					ForBack(-finalMove, 30);
 // adding
 
-					LiftDown(30, leftHeight - 270, rightHeight - 270); //Lower our 	robot down
+					LiftDown(30, leftHeight - 170, rightHeight - 170); //Lower our 	robot down
 					wait1Msec(defaultDelay);
 
 					// Need to increase for programming skill
@@ -372,7 +405,7 @@ task usercontrol()
 
     if (btn8r + btn8l > 0)
     {
-			SensorType[GyroUp] = 0;
+			SensorValue[GyroUp] = 0;
     }
 
 	  // lp = 127;
@@ -748,15 +781,15 @@ void ForBack(int power, int distance)
 {
 	if (power != 0)
 	{
-	SensorValue[EncoderFrontLeft] = 0 ;
-	while(SensorValue[EncoderFrontLeft] > distance)
-	{
-		motor[FrontLeft] = power;
-		motor[FrontRight] = power;
-		motor[BackRight] = power;
-		motor[BackLeft] = power;
+		SensorValue[EncoderFrontLeft] = 0 ;
+		while(SensorValue[EncoderFrontLeft] <= distance)
+		{
+			motor[FrontLeft] = power;
+			motor[FrontRight] = power;
+			motor[BackRight] = power;
+			motor[BackLeft] = power;
+		}
 	}
-}
 	StopMoving();
 }
 
@@ -813,7 +846,7 @@ void MoveDiagonal(int power, int distance)
 		else
 		{
 			SensorValue[EncoderFrontLeft] = 0;
-			while(SensorValue[EncoderFrontLeft] >= -distance)
+			while(SensorValue[EncoderFrontLeft] <= distance)
 			{
 				motor[FrontLeft] = -power;
 				motor[BackRight] = -power;
@@ -832,7 +865,7 @@ void LeftRight(int power, int distance)
 		{ // Red
 			power = -power;
 			SensorValue[EncoderFrontRight] = 0;
-			while(SensorValue[EncoderFrontRight] > -distance)
+			while(SensorValue[EncoderFrontRight] <= -distance)
 			{
 		   	motor[FrontLeft] = power;
 		    motor[FrontRight] = -power;
@@ -843,7 +876,7 @@ void LeftRight(int power, int distance)
 		else
 		{
 			SensorValue[EncoderFrontRight] = 0;
-			while(SensorValue[EncoderFrontRight] < distance)
+			while(SensorValue[EncoderFrontRight] >= distance)
 			{
 		   	motor[FrontLeft] = power;
 		    motor[FrontRight] = -power;
@@ -988,8 +1021,8 @@ void LiftUp(float power, int left, int right)
 
 void LiftDown(float power, int left, int right)
 {
-	float lp = power;
-	float rp = power * 0.8;
+	float lp = power * 0.70;
+	float rp = power;
 
 		while(SensorValue[armPotentiometerLeft] > left
 				&& SensorValue[armPotentiometerRight] > right)
@@ -1002,8 +1035,6 @@ void LiftDown(float power, int left, int right)
 
 		StopLift();
 }
-
-
 
 void PickUpCube(int duration,int power) //pick cube up and stuff
 {
