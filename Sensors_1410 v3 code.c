@@ -10,10 +10,10 @@
 #pragma config(Sensor, dgtl11, Jumper1,        sensorDigitalIn)
 #pragma config(Sensor, dgtl12, Jumper2,        sensorDigitalIn)
 #pragma config(Motor,  port1,           CrayonIntake,  tmotorVex393, openLoop)
-#pragma config(Motor,  port2,           FrontLeft,     tmotorVex393HighSpeed, openLoop, reversed)
-#pragma config(Motor,  port3,           FrontRight,    tmotorVex393HighSpeed, openLoop, reversed)
-#pragma config(Motor,  port4,           BackRight,     tmotorVex393HighSpeed, openLoop)
-#pragma config(Motor,  port5,           BackLeft,      tmotorVex393HighSpeed, openLoop)
+#pragma config(Motor,  port2,           FrontLeft,     tmotorVex393, openLoop, reversed)
+#pragma config(Motor,  port3,           FrontRight,    tmotorVex393, openLoop, reversed)
+#pragma config(Motor,  port4,           BackRight,     tmotorVex393, openLoop)
+#pragma config(Motor,  port5,           BackLeft,      tmotorVex393, openLoop)
 #pragma config(Motor,  port6,           LeftLift1,     tmotorVex393, openLoop)
 #pragma config(Motor,  port7,           LeftLift2,     tmotorVex393, openLoop)
 #pragma config(Motor,  port8,           RightLift1,    tmotorVex393, openLoop, reversed)
@@ -52,9 +52,14 @@ void ReleaseSkyrise(int duration);
 void Claw(int power);
 void StopLift();
 void AdjustAutoLift(int height);
-void LiftUp(float power, int left, int right);
-void LiftDown(float power, int left, int right);
+void LiftUp(bool programmingSkill, float power, int left, int right);
+void LiftDown(bool programmingSkill, float power, int left, int right);
+void LiftUpAndCloseCubeIntake(float power, int left, int right);
+void GyroRotateAndReadyCube(int angle);
 void GyroRotate(int angle);
+bool PickUpCube(int value,int power);
+void ReleaseCube(int value,int power);
+
 ////////////////////////////////////////////////////
 
 
@@ -77,6 +82,8 @@ typedef struct {
 	int Left;
 	int Right;
 } HeightValuePair;
+
+HeightValuePair heightValuePairs[8];
 
 typedef enumWord {
     Adjusted = 0,
@@ -111,7 +118,7 @@ void pre_auton()
  	wait1Msec(1000);
 
 
-	HeightValuePair heightValuePairs[8];
+
 
 	heightValuePairs[0].Left = 1556;
 	heightValuePairs[0].Right = 1618;
@@ -245,15 +252,18 @@ task autonomous()
 				int moveUpTo = 420;
 				int savedLeftValue = SensorValue[armPotentiometerLeft];
  				int savedRightValue = SensorValue[armPotentiometerRight];
-				LiftUp(-127, savedLeftValue + moveUpTo, savedRightValue + moveUpTo); // Lift up
-				wait1Msec(defaultDelay);
+				LiftUp(false, -127, savedLeftValue + moveUpTo, savedRightValue + moveUpTo); // Lift up
+				// LiftUpAndCloseCubeIntake(-127, savedLeftValue + moveUpTo, savedRightValue + moveUpTo); // Lift up
+ 				wait1Msec(defaultDelay);
 
 				// rotate to the skyrise base
 				GyroRotate(defaultGyroRotate);
+
 				wait1Msec(defaultDelay);
+				motor[CubeIntake] = 0;
 
 				// lift down to the base
-				LiftDown(127, savedLeftValue, savedRightValue); //Lift our 	robot down
+				LiftDown(false, 127, savedLeftValue, savedRightValue); //Lift our 	robot down
 				wait1Msec(defaultDelay);
 
 				ReleaseSkyrise(550);
@@ -269,13 +279,15 @@ task autonomous()
 				bool programmingSkill = false;
 				int iteration_index = 1;
 				int iteration_Height = 50;
-				int iteration_ReleaseDuration = 20;
+				int iteration_ReleaseDuration = 50;
+				bool adjustNeeded = false;
 
 				if (programmingSkill)
 				{
-					iteration_index = 3;
-					iteration_Height = 90;
+					iteration_index = 5;
+					iteration_Height = 50;
 					iteration_ReleaseDuration = 550;
+					defaultDelay = defaultDelay * 2;
 				}
 
 				for (int i = 1; i <= iteration_index; i++) // MULTI
@@ -292,7 +304,15 @@ task autonomous()
 					int differenceMoveUp = moveUpTo + (iteration_Height * i);
 					int leftHeight = savedLeftValue + differenceMoveUp;
 					int rightHeight = savedRightValue + differenceMoveUp;
-					LiftUp(-127, leftHeight, rightHeight); //Lift up
+
+					if (programmingSkill && i > 1)
+					{
+						leftHeight = heightValuePairs[i].Left;
+						rightHeight = heightValuePairs[i].Right;
+						adjustNeeded = true;
+					}
+
+					LiftUp(adjustNeeded, -127, leftHeight, rightHeight); //Lift up
 					wait1Msec(defaultDelay);
 					GyroRotate(iteration_defaultGyroRotate);
 
@@ -305,7 +325,7 @@ task autonomous()
 					ForBack(-finalMove, 30);
 // adding
 
-					LiftDown(30, leftHeight - 170, rightHeight - 170); //Lower our 	robot down
+					LiftDown(false, 30, leftHeight - 170, rightHeight - 170); //Lower our 	robot down
 					wait1Msec(defaultDelay);
 
 					// Need to increase for programming skill
@@ -313,14 +333,137 @@ task autonomous()
 					ReleaseSkyrise(iteration_ReleaseDuration);
 
 					// Lower down to the base
-					LiftDown(127, savedLeftValue, savedRightValue); //Lift our 	robot down
-
+					LiftDown(false, 127, savedLeftValue, savedRightValue); //Lift our 	robot down
 
 					writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
+					wait1Msec(defaultDelay);
 				}
 		}
 
 
+}
+
+void LiftUp(bool programmingSkill, float power, int left, int right)
+{
+		float lp = power;
+		float rp = power;
+/*
+		if (programmingSkill)
+		{
+			rp = power;
+		}
+	*/
+
+		while(SensorValue[armPotentiometerLeft] < left
+				|| SensorValue[armPotentiometerRight] < right)
+		{
+		    motor[LeftLift1] = lp;
+		    motor[RightLift1] = rp;
+		    motor[LeftLift2] = lp;
+		    motor[RightLift2] = rp;
+		}
+
+		StopLift();
+
+		while(SensorValue[armPotentiometerLeft] < left)
+		{
+		    motor[LeftLift1] = lp;
+		    motor[LeftLift2] = lp;
+		}
+
+		StopLift();
+
+		while(SensorValue[armPotentiometerRight] < right)
+		{
+		    motor[RightLift1] = rp;
+		    motor[RightLift2] = rp;
+		}
+
+		StopLift();
+
+	//	AdjustAutoLift(SensorValue[armPotentiometerRight]);
+}
+
+void LiftDown(bool programmingSkill, float power, int left, int right)
+{
+	float lp = power  * 0.78;
+	float rp = power;
+
+
+	if (power == 127)
+	{
+		// rp = power * 0.80;
+	}
+	else
+	{
+		// lp = power * 0.80;
+	}
+
+		while(SensorValue[armPotentiometerLeft] > left
+				|| SensorValue[armPotentiometerRight] > right)
+		{
+		    motor[LeftLift1] = lp;
+		    motor[RightLift1] = rp;
+		    motor[LeftLift2] = lp;
+		    motor[RightLift2] = rp;
+		}
+
+		StopLift();
+
+
+		while(SensorValue[armPotentiometerLeft] > left)
+		{
+		    motor[LeftLift1] = lp;
+		    motor[LeftLift2] = lp;
+		}
+
+		StopLift();
+
+		while(SensorValue[armPotentiometerRight] > right)
+		{
+		    motor[RightLift1] = rp;
+		    motor[RightLift2] = rp;
+		}
+
+		StopLift();
+
+}
+
+bool PickUpCube(int value,int power) //pick cube up and stuff
+{
+	  ClearTimer(T2);
+		if (SensorValue[CubeIntakePotentiometer] >= value || SensorValue[CubeIntakePotentiometer] < 300)
+		{
+			return true;
+		}
+
+		while(SensorValue[CubeIntakePotentiometer] < value)
+		{
+		    motor[CubeIntake] = -power;
+		    if (time1[T2] > 1000)
+		    {
+		    	motor[CubeIntake] = 0;
+		    	return false;
+		    }
+		}
+
+		motor[CubeIntake] = 0;
+		return true;
+}
+
+void ReleaseCube(int value,int power)
+{
+		if (SensorValue[CubeIntakePotentiometer] <= value)
+		{
+			return;
+		}
+
+		while(SensorValue[CubeIntakePotentiometer] > value)
+		{
+		    motor[CubeIntake] = power;
+		}
+
+		motor[CubeIntake] = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -350,9 +493,20 @@ task usercontrol()
 
 	while (true)
 	{
+		 ClearTimer(T2);
+		 while (time1[T2] < 100){}
+
      // reverse when moving backward
-     if (vexRT[Btn7U] == 1) MovingForward = true;
-     else if(vexRT[Btn7D] == 1) MovingForward = false;
+     if (vexRT[Btn7U] == 1)
+     {
+       StopMoving();
+       MovingForward = true;
+     }
+     else if(vexRT[Btn7D] == 1)
+     {
+       StopMoving();
+       MovingForward = false;
+     }
 
 
      int filtered2 = vexRT[Ch2];
@@ -403,10 +557,27 @@ task usercontrol()
 	  int btn8r = vexRT[Btn8R];
 	  int btn8l = vexRT[Btn8L];
 
+	  int btn8d = vexRT[Btn8D];
+	  int btn8u = vexRT[Btn8U];
+
     if (btn8r + btn8l > 0)
     {
 			SensorValue[GyroUp] = 0;
     }
+
+    if (btn8d + btn8u > 0)
+    {/*
+    	if (SensorValue[CubeIntakePotentiometer] < 2450)
+			{
+				btn8d = btn8u = 0;
+			}*/
+
+			if (!PickUpCube(2600, 127))
+			{
+				btn8d = btn8u = 0;
+			}
+    }
+
 
 	  // lp = 127;
 	  // rp = 127;
@@ -414,10 +585,10 @@ task usercontrol()
 	  // int temp = lp;
 	  // lp = rp;
 	  // rp = temp;
-		motor[LeftLift1] =  (vexRT[Btn8D] - vexRT[Btn8U]) * lp + btn8l * 25 - btn8r * 25;
-		motor[LeftLift2] =  (vexRT[Btn8D] - vexRT[Btn8U]) * lp + btn8l * 25 - btn8r * 25;
-		motor[RightLift1] = (vexRT[Btn8D] - vexRT[Btn8U]) * rp + btn8r * 25 - btn8l * 25;
-		motor[RightLift2] = (vexRT[Btn8D] - vexRT[Btn8U]) * rp + btn8r * 25 - btn8l * 25;
+		motor[LeftLift1] =  (btn8d - btn8u) * lp + btn8l * 25 - btn8r * 25;
+		motor[LeftLift2] =  (btn8d - btn8u) * lp + btn8l * 25 - btn8r * 25;
+		motor[RightLift1] = (btn8d - btn8u) * rp + btn8r * 25 - btn8l * 25;
+		motor[RightLift2] = (btn8d - btn8u) * rp + btn8r * 25 - btn8l * 25;
 
         // adjust when we stops
 		if (armPotentiometerUsed == true)
@@ -901,6 +1072,13 @@ void Rotate(int power)
     motor[BackLeft] = power;
 }
 
+void GyroRotateAndReadyCube(int angle)
+{
+	motor[CubeIntake] = -127;
+	GyroRotate(angle);
+	motor[CubeIntake] = 0;
+}
+
 void GyroRotate(int angle)
 {
 	SensorValue[GyroDown] = 0;
@@ -1001,7 +1179,53 @@ void AdjustAutoLift(int height)
 
 }
 
-void LiftUp(float power, int left, int right)
+void LiftUpAndCloseCubeIntake(float power, int left, int right)
+{
+
+		float lp = power;
+		float rp = power * 0.75;
+
+		// ClearTimer(T2);
+
+		while(SensorValue[armPotentiometerLeft] < left
+				&& SensorValue[armPotentiometerRight] < right)
+		{
+		    motor[LeftLift1] = lp;
+		    motor[RightLift1] = rp;
+		    motor[LeftLift2] = lp;
+		    motor[RightLift2] = rp;
+
+		    if (SensorValue[armPotentiometerRight] > 1900)
+		    {
+		    	motor[CubeIntake] = -127;
+				}
+		}
+
+
+		StopLift();
+}
+
+void LiftUp1(bool programmingSkill, float power, int left, int right)
+{
+		float lp = power;
+		float rp = power;
+
+
+		while(SensorValue[armPotentiometerLeft] < left
+				|| SensorValue[armPotentiometerRight] < right)
+		{
+		    motor[LeftLift1] = lp;
+		    motor[RightLift1] = rp;
+		    motor[LeftLift2] = lp;
+		    motor[RightLift2] = rp;
+		}
+
+		StopLift();
+
+	//	AdjustAutoLift(SensorValue[armPotentiometerRight]);
+}
+
+void LiftUpOld(float power, int left, int right)
 {
 		float lp = power;
 		float rp = power * 0.75;
@@ -1017,35 +1241,4 @@ void LiftUp(float power, int left, int right)
 
 		StopLift();
 	//	AdjustAutoLift(SensorValue[armPotentiometerRight]);
-}
-
-void LiftDown(float power, int left, int right)
-{
-	float lp = power * 0.70;
-	float rp = power;
-
-		while(SensorValue[armPotentiometerLeft] > left
-				&& SensorValue[armPotentiometerRight] > right)
-		{
-		    motor[LeftLift1] = lp;
-		    motor[RightLift1] = rp;
-		    motor[LeftLift2] = lp;
-		    motor[RightLift2] = rp;
-		}
-
-		StopLift();
-}
-
-void PickUpCube(int duration,int power) //pick cube up and stuff
-{
-motor[CubeIntakeIntake] =power;
-wait1Msec(duration);
-motor[CubeIntakeIntake] = 30;
-}
-
-void ReleaseCube(int duration,int power)
-{
-motor[CubeIntakeIntake] = power;
-wait1Msec(duration);
-motor[CubeIntakeIntake] = 0;
 }
