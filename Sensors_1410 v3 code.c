@@ -133,9 +133,9 @@ void pre_auton()
 	heightValuePairs[5].Left = 2613;
 	heightValuePairs[5].Right = 2645;
 	heightValuePairs[6].Left = 2997;
-	heightValuePairs[6].Left = 2997;
+	heightValuePairs[6].Right = 2997;
 
-	heightValuePairs[7].Right = 3428;
+	heightValuePairs[7].Left = 3428;
 	heightValuePairs[7].Right = 3488;
 
 
@@ -512,6 +512,29 @@ task usercontrol()
      int filtered2 = vexRT[Ch2];
      int filtered4 = vexRT[Ch4];
 
+
+     writeDebugStream("wheels: %d ->	", filtered2);
+
+     if (SensorValue[armPotentiometerLeft] > 2800 || SensorValue[armPotentiometerRight] > 2800)
+		 {
+		  	filtered2 = 0;
+		 }/*
+		 else if (SensorValue[armPotentiometerLeft] > 2890 || SensorValue[armPotentiometerRight] > 2910)
+		 {
+		  	filtered2 = filtered2 / 3;
+		 }*/
+     else if (SensorValue[armPotentiometerLeft] > 2230 || SensorValue[armPotentiometerRight] > 2270)
+		 {
+		  	filtered2 = filtered2 / 2;
+		 }
+		 
+		 
+		 
+		 writeDebugStreamLine("%d	", filtered2);
+
+	 
+		   
+     
 		// Button7
     filtered2 = ReverseIfNeeded(filtered2);
         // filtered4 = ReverseIfNeeded(filtered4);
@@ -566,15 +589,14 @@ task usercontrol()
     }
 
     if (btn8d + btn8u > 0)
-    {/*
-    	if (SensorValue[CubeIntakePotentiometer] < 2450)
+    {
+    	
+    	if (SensorValue[CubeIntakePotentiometer] > 930)
 			{
-				btn8d = btn8u = 0;
-			}*/
-
-			if (!PickUpCube(2600, 127))
-			{
-				btn8d = btn8u = 0;
+				if (!PickUpCube(2600, 127))
+				{
+					btn8d = btn8u = 0;
+				}
 			}
     }
 
@@ -688,11 +710,15 @@ int GetLeftPower(float leftPot, float rightPot)
     // On moving up
     if (vexRT[Btn8U] == 1)
 	{
+		  if (SensorValue[armPotentiometerLeft] > 3550)
+		  {
+		  	return 0;
+		  }
         // moving up
         PreviousAction = Up;
 
         // if we just started moving, we need full power.
-		if (leftPot <= 500)
+		if (leftPot <= 300)
 		{
 			return fullPower;
 		}
@@ -723,6 +749,7 @@ int GetLeftPower(float leftPot, float rightPot)
 			if (leftPot <= 400)
 			{
 				// need to slow down?;
+				// return fullPower_Down * 0.3;
 			}
 			return fullPower_Down;
 		}
@@ -748,8 +775,13 @@ int GetRightPower(float leftPot, float rightPot)
 
 	if (vexRT[Btn8U] == 1)
 	{
+		if (SensorValue[armPotentiometerRight] > 3602)
+		  {
+		  	return 0;
+		  }
+		  
 		PreviousAction = Up;
-		if (rightPot <= 500)
+		if (rightPot <= 300)
 		{
 			return fullPower;
 		}
@@ -773,6 +805,7 @@ int GetRightPower(float leftPot, float rightPot)
 			if (rightPot <= 400)
 			{
                 // need to slow down
+				//return fullPower_Down * 0.3;
 			}
 			return fullPower_Down;
 		}
