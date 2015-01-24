@@ -1,17 +1,17 @@
+#pragma config(I2C_Usage, I2C1, i2cSensors)
 #pragma config(Sensor, in1,    armPotentiometerLeft, sensorPotentiometer)
 #pragma config(Sensor, in2,    armPotentiometerRight, sensorPotentiometer)
 #pragma config(Sensor, in3,    GyroDown,       sensorNone)
 #pragma config(Sensor, in4,    GyroUp,         sensorNone)
 #pragma config(Sensor, in5,    CubeIntakePotentiometer, sensorPotentiometer)
-#pragma config(Sensor, dgtl1,  EncoderFrontLeft, sensorQuadEncoder)
-#pragma config(Sensor, dgtl3,  EncoderFrontRight, sensorQuadEncoder)
-#pragma config(Sensor, dgtl5,  EncoderBackLeft, sensorQuadEncoder)
-#pragma config(Sensor, dgtl7,  EncoderBackRight, sensorQuadEncoder)
+#pragma config(Sensor, dgtl1,  sonarSensor,    sensorSONAR_cm)
 #pragma config(Sensor, dgtl11, Jumper1,        sensorDigitalIn)
 #pragma config(Sensor, dgtl12, Jumper2,        sensorDigitalIn)
+#pragma config(Sensor, I2C_1,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
+#pragma config(Sensor, I2C_2,  ,               sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Motor,  port1,           CrayonIntake,  tmotorVex393, openLoop)
-#pragma config(Motor,  port2,           FrontLeft,     tmotorVex393, openLoop, reversed)
-#pragma config(Motor,  port3,           FrontRight,    tmotorVex393, openLoop, reversed)
+#pragma config(Motor,  port2,           FrontLeft,     tmotorVex393, openLoop, reversed, encoder, encoderPort, I2C_1, 1000)
+#pragma config(Motor,  port3,           FrontRight,    tmotorVex393, openLoop, reversed, encoder, encoderPort, I2C_2, 1000)
 #pragma config(Motor,  port4,           BackRight,     tmotorVex393, openLoop)
 #pragma config(Motor,  port5,           BackLeft,      tmotorVex393, openLoop)
 #pragma config(Motor,  port6,           LeftLift1,     tmotorVex393, openLoop)
@@ -41,12 +41,14 @@ int DefaultRightValue = 0;
 
 ////////////////////////////////////////////////////
 /// Autonomous mode
+/*
 void ForBack(int power, int distance);
 void LeftRight(int power, int distance);
 void StopMoving();
 void MoveDiagonal(int power, int distance);
 void MoveDiagonalReverse(int power, int distance);
 void Rotate(int power);
+*/
 void PickUpSkyrise(int duration);
 void ReleaseSkyrise(int duration);
 void Claw(int power);
@@ -59,6 +61,7 @@ void GyroRotateAndReadyCube(int angle);
 void GyroRotate(int angle);
 bool PickUpCube(int value,int power);
 void ReleaseCube(int value,int power);
+int AdjustBatteryLevel(int OriginalPower);
 
 ////////////////////////////////////////////////////
 
@@ -157,7 +160,7 @@ void pre_auton()
 task autonomous()
 {
 		ClearTimer(T3);
-
+		int WantedPower = AdjustBatteryLevel(50);
 		int defaultMovePower= 70;
 		int defaultDelay = 100;
 
@@ -165,7 +168,7 @@ task autonomous()
 		/// RED RED RED RED RED
 		/// RED RED RED RED RED
 		/// RED RED RED RED RED
- 		bool isBlue = false;
+ 		/*bool isBlue = false;
 		int initialmoveDiagonalDistance = 155;
  		int initialForwardDistance = 0;
 		int initialmoveLeftDistance = 20;
@@ -174,8 +177,15 @@ task autonomous()
 		int defaultGyroRotate = -700;
 
 		int iteration_defaultGyroRotate = -660;
-		int finalMove = 0;
+		int finalMove = 0;*/
 
+		while(nMotorEncoder[FrontLeft] < 10)
+		{
+		  motor[FrontLeft] = WantedPower;
+			motor[FrontRight] = WantedPower;
+			motor[BackRight] = WantedPower;
+			motor[BackLeft] = WantedPower;
+		}
 		//////////////////////
 		/// RED RED RED RED RED
 		/// RED RED RED RED RED
@@ -188,7 +198,7 @@ task autonomous()
 		/// BLUE BLUE BLUE BLUE BLUE
 		//////////////////////
 
-		if (SensorValue[Jumper1] == 1)
+		/*if (SensorValue[Jumper1] == 1)
 		{ // Initialize for Blue
 			isBlue = true;
 
@@ -338,9 +348,17 @@ task autonomous()
 					writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
 					wait1Msec(defaultDelay);
 				}
-		}
+		}*/
 
 
+}
+
+int AdjustBatteryLevel(int OriginalPower)
+{
+	float AdjustBatteryLevel = nImmediateBatteryLevel;
+  float BatteryOffset =	6000 / AdjustBatteryLevel;
+  int WantedPower = OriginalPower * BatteryOffset;
+  return WantedPower;
 }
 
 void LiftUp(bool programmingSkill, float power, int left, int right)
@@ -499,12 +517,12 @@ task usercontrol()
      // reverse when moving backward
      if (vexRT[Btn7U] == 1)
      {
-       StopMoving();
+ //      StopMoving();
        MovingForward = true;
      }
      else if(vexRT[Btn7D] == 1)
      {
-       StopMoving();
+   //    StopMoving();
        MovingForward = false;
      }
 
@@ -527,14 +545,14 @@ task usercontrol()
 		 {
 		  	filtered2 = filtered2 / 2;
 		 }
-		 
-		 
-		 
+
+
+
 		 writeDebugStreamLine("%d	", filtered2);
 
-	 
-		   
-     
+
+
+
 		// Button7
     filtered2 = ReverseIfNeeded(filtered2);
         // filtered4 = ReverseIfNeeded(filtered4);
@@ -590,7 +608,7 @@ task usercontrol()
 
     if (btn8d + btn8u > 0)
     {
-    	
+
     	if (SensorValue[CubeIntakePotentiometer] > 930)
 			{
 				if (!PickUpCube(2600, 127))
@@ -779,7 +797,7 @@ int GetRightPower(float leftPot, float rightPot)
 		  {
 		  	return 0;
 		  }
-		  
+
 		PreviousAction = Up;
 		if (rightPot <= 300)
 		{
@@ -981,6 +999,7 @@ int LiftAdjust (int thisP, int otherP)
 //
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
+/*
 void ForBack(int power, int distance)
 {
 	if (power != 0)
@@ -1004,8 +1023,8 @@ void StopMoving()
 		motor[BackRight] = 0;
 		motor[BackLeft] = 0;
 }
-
-
+*/
+/*
 void MoveDiagonalReverse(int power, int distance)
 {
 	if (power > 0) // When power is 0, we should stop immediately
@@ -1092,7 +1111,7 @@ void LeftRight(int power, int distance)
 
 	StopMoving();
 }
-
+*/
 void Rotate(int power)
 {
 //	if (SensorValue[Jumper1] == 0)
@@ -1157,7 +1176,7 @@ void GyroRotate(int angle)
 		}
 	}
 
-	StopMoving();
+//	StopMoving();
 }
 
 void PickUpSkyrise(int duration)
