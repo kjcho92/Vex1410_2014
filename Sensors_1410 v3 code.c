@@ -194,8 +194,9 @@ task autonomous()
 
 		wantedPower = 50;
 
+		int offset = 550;
 						// pick up skyrise
-		for (int i = 0; i <= 3; i++)
+		for (int i = 0; i <= 6; i++)
 		{
 			PickUpSkyrise(800);
 			wait1Msec (defaultDelay);
@@ -203,7 +204,17 @@ task autonomous()
 			nMotorEncoder(LeftLift2) = 0;
 			nMotorEncoder(RightLift1) = 0;
 	
-			EncoderLiftUp(-90, -1600 - (500 * i), -1600 - (500 * i)); // Lift up
+			
+			if (i >= 5) 
+			{
+				offset = 670;
+			}
+			else 
+			{
+				offset = 500;
+			}
+			
+			EncoderLiftUp(-90, -1600 - (offset * i), -1600 - (offset * i)); // Lift up
 					// LiftUpAndCloseCubeIntake(-127, savedLeftValue + moveUpTo, savedRightValue + moveUpTo); // Lift up
 	 		wait1Msec(defaultDelay);
 	
@@ -219,7 +230,7 @@ task autonomous()
 			wait1Msec (defaultDelay);
 	
 	
-			EncoderLiftDown(50, -1000 * i , -1000 * i); //Lift down
+			EncoderLiftDown(50, -850 * i , -850 * i); //Lift down
 			wait1Msec (defaultDelay);
 	
 			ReleaseSkyrise(550);
@@ -450,6 +461,32 @@ void EncoderLiftUp(int power, int leftTarget, int rightTarget)
 		}
 
 		StopLift();
+
+					wait1Msec (200);
+
+					
+		while(nMotorEncoder(LeftLift2) > leftTarget)
+		{
+		    motor[LeftLift1] = power;
+		    motor[LeftLift2] = power;
+//			writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
+		}
+		
+		StopLift();
+
+					wait1Msec (200);
+
+					
+		while(nMotorEncoder(RightLift1) > rightTarget)
+		{
+		    motor[RightLift1] = power;
+		    motor[RightLift2] = power;
+//			writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
+		}
+		
+		StopLift();
+
+				
 }
 
 void EncoderLiftDown(int power, int leftTarget, int rightTarget)
@@ -466,6 +503,8 @@ void EncoderLiftDown(int power, int leftTarget, int rightTarget)
 		}
 
 		StopLift();
+		
+		
 }
 
 void LiftUp(bool programmingSkill, float power, int left, int right)
