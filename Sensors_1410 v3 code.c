@@ -41,36 +41,27 @@ int DefaultLeftValue = 0;
 int DefaultRightValue = 0;
 
 ////////////////////////////////////////////////////
-/// Autonomous mode
-/*
-void ForBack(int power, int distance);
-void LeftRight(int power, int distance);
-void StopMoving();
-void MoveDiagonal(int power, int distance);
-void MoveDiagonalReverse(int power, int distance);
-void Rotate(int power);
-*/
-void PickUpSkyrise(int duration);
-void ReleaseSkyrise(int duration);
+/// Autonomous mode - Not using
 void Claw(int power);
-void StopLift();
-void AdjustAutoLift(int height);
-void LiftUp(bool programmingSkill, float power, int left, int right);
-void LiftDown(bool programmingSkill, float power, int left, int right);
-void LiftUpAndCloseCubeIntake(float power, int left, int right);
 void GyroRotateAndReadyCube(int angle);
+void GyroRotateToInitialPosition(int power);
 void GyroRotate(int angle);
 bool PickUpCube(int value,int power);
 void ReleaseCube(int value,int power);
-int AdjustBatteryLevel(int OriginalPower);
 
 ////////////////////////////////////////////////////
+/// Autonomous mode - Using
 void SonarRotate(int distance, int power);
 void StopMoving();
-void GyroRotateToInitialPosition(int power);
 void EncoderRotate(int power);
 void EncoderLiftUp(int power, int leftTarget, int rightTarget);
 void EncoderLiftDown(int power, int leftTarget, int rightTarget);
+void PickUpSkyrise(int duration);
+void ReleaseSkyrise(int duration);
+void StopLift();
+void AdjustAutoLiftUp();
+int AdjustBatteryLevel(int OriginalPower);
+
 ////////////////////////////////////////////////////
 /// Drive mode
 int LiftAdjust(int thisP, int otherP);
@@ -172,53 +163,38 @@ void pre_auton()
 task autonomous()
 {
 		ClearTimer(T3);
-		int originalPower = 50;
-		int wantedPower = AdjustBatteryLevel(originalPower);
-		int defaultDelay = 200;
-//		int defaultMovePower= 70;
 
-		//////////////////////
-		/// RED RED RED RED RED
-		/// RED RED RED RED RED
-		/// RED RED RED RED RED
- 		/*bool isBlue = false;
-		int initialmoveDiagonalDistance = 155;
- 		int initialForwardDistance = 0;
-		int initialmoveLeftDistance = 20;
-
-		int initialGyroRotate = 250;
-		int defaultGyroRotate = -700;
-
-		int iteration_defaultGyroRotate = -660;
-		int finalMove = 0;*/
-
-		wantedPower = 50;
-
-		int offset = 550;
+		int sshortDelay = 25;
+		int shortDelay = 50;
+		int defaultDelay = 100;
+		int offset = 150;
 						// pick up skyrise
 		for (int i = 0; i <= 6; i++)
 		{
-			PickUpSkyrise(800);
+			PickUpSkyrise(700);
 			wait1Msec (defaultDelay);
 	
 			nMotorEncoder(LeftLift2) = 0;
 			nMotorEncoder(RightLift1) = 0;
 	
-			
-			if (i >= 5) 
+				
+			switch (i)
 			{
-				offset = 670;
-			}
-			else 
-			{
-				offset = 500;
+				case 0:
+				case 1:
+				case 2: offset = 150; break;
+				case 3: offset = 300; break;
+				case 4: offset = 400; break;
+				case 5: offset = 520; break;
+				case 6: offset = 680; break;
 			}
 			
-			EncoderLiftUp(-90, -1600 - (offset * i), -1600 - (offset * i)); // Lift up
-					// LiftUpAndCloseCubeIntake(-127, savedLeftValue + moveUpTo, savedRightValue + moveUpTo); // Lift up
+			
+			int left = -1550 - (offset * i);
+			int right = -1550 - (offset * i);
+			
+			EncoderLiftUp(-127, left, right); // Lift up
 	 		wait1Msec(defaultDelay);
-	
-	 		SensorValue[GyroDown] = 0;
 	
 			nMotorEncoder(FrontRight) = 0;
 			nMotorEncoder(FrontLeft) = 0;
@@ -228,16 +204,34 @@ task autonomous()
 			int sonarRotationPower = AdjustBatteryLevel(sonarRotationOriginalPower);
 			SonarRotate(300, sonarRotationPower);
 			wait1Msec (defaultDelay);
+
+			
 	
-	
-			EncoderLiftDown(50, -850 * i , -850 * i); //Lift down
+			// EncoderLiftDown(70, -750 * i , -750 * i); //Lift down
+			
+			int heightToDrop = 120;
+			if (0==i)
+			{
+				left = 0;
+				right = 0;
+				heightToDrop = 0;
+			}
+			else if (1 == i)
+			{
+				heightToDrop = 200;
+			}
+			
+			EncoderLiftDown(50, left + heightToDrop , right + heightToDrop); //Lift down
+			
 			wait1Msec (defaultDelay);
 	
-			ReleaseSkyrise(550);
-			wait1Msec(defaultDelay);
+			ReleaseSkyrise(500);
+			writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
+
+			wait1Msec(shortDelay);
 	
-			EncoderLiftDown(50, 0, 0); //Lift down
-			wait1Msec(defaultDelay);
+			EncoderLiftDown(60, 0, 0); //Lift down
+			wait1Msec(sshortDelay);
 	
 	//		gyroRotationAngle = SensorValue[GyroDown];
 	
@@ -248,9 +242,8 @@ task autonomous()
 			int gyroRotationPower = AdjustBatteryLevel(gyroRotationOriginalPower);
 	
 			EncoderRotate(gyroRotationPower);
-			wait1Msec(defaultDelay);
-			writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
-
+//			wait1Msec(defaultDelay);
+	
 		}
 		
 		
@@ -461,32 +454,9 @@ void EncoderLiftUp(int power, int leftTarget, int rightTarget)
 		}
 
 		StopLift();
-
-					wait1Msec (200);
-
-					
-		while(nMotorEncoder(LeftLift2) > leftTarget)
-		{
-		    motor[LeftLift1] = power;
-		    motor[LeftLift2] = power;
-//			writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
-		}
+		wait1Msec(100);
 		
-		StopLift();
-
-					wait1Msec (200);
-
-					
-		while(nMotorEncoder(RightLift1) > rightTarget)
-		{
-		    motor[RightLift1] = power;
-		    motor[RightLift2] = power;
-//			writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
-		}
-		
-		StopLift();
-
-				
+		AdjustAutoLiftUp();
 }
 
 void EncoderLiftDown(int power, int leftTarget, int rightTarget)
@@ -503,94 +473,6 @@ void EncoderLiftDown(int power, int leftTarget, int rightTarget)
 		}
 
 		StopLift();
-		
-		
-}
-
-void LiftUp(bool programmingSkill, float power, int left, int right)
-{
-		float lp = power;
-		float rp = power;
-/*
-		if (programmingSkill)
-		{
-			rp = power;
-		}
-	*/
-
-		while(SensorValue[armPotentiometerLeft] < left
-				|| SensorValue[armPotentiometerRight] < right)
-		{
-		    motor[LeftLift1] = lp;
-		    motor[RightLift1] = rp;
-		    motor[LeftLift2] = lp;
-		    motor[RightLift2] = rp;
-		}
-
-		StopLift();
-
-		while(SensorValue[armPotentiometerLeft] < left)
-		{
-		    motor[LeftLift1] = lp;
-		    motor[LeftLift2] = lp;
-		}
-
-		StopLift();
-
-		while(SensorValue[armPotentiometerRight] < right)
-		{
-		    motor[RightLift1] = rp;
-		    motor[RightLift2] = rp;
-		}
-
-		StopLift();
-
-	//	AdjustAutoLift(SensorValue[armPotentiometerRight]);
-}
-
-void LiftDown(bool programmingSkill, float power, int left, int right)
-{
-	float lp = power  * 0.78;
-	float rp = power;
-
-
-	if (power == 127)
-	{
-		// rp = power * 0.80;
-	}
-	else
-	{
-		// lp = power * 0.80;
-	}
-
-		while(SensorValue[armPotentiometerLeft] > left
-				|| SensorValue[armPotentiometerRight] > right)
-		{
-		    motor[LeftLift1] = lp;
-		    motor[RightLift1] = rp;
-		    motor[LeftLift2] = lp;
-		    motor[RightLift2] = rp;
-		}
-
-		StopLift();
-
-
-		while(SensorValue[armPotentiometerLeft] > left)
-		{
-		    motor[LeftLift1] = lp;
-		    motor[LeftLift2] = lp;
-		}
-
-		StopLift();
-
-		while(SensorValue[armPotentiometerRight] > right)
-		{
-		    motor[RightLift1] = rp;
-		    motor[RightLift2] = rp;
-		}
-
-		StopLift();
-
 }
 
 bool PickUpCube(int value,int power) //pick cube up and stuff
@@ -677,7 +559,7 @@ task usercontrol()
      int filtered4 = vexRT[Ch4];
 
 
-     writeDebugStream("wheels: %d ->	", filtered2);
+     // writeDebugStream("wheels: %d ->	", filtered2);
 
      if (SensorValue[armPotentiometerLeft] > 2800 || SensorValue[armPotentiometerRight] > 2800)
 		 {
@@ -1159,116 +1041,6 @@ int LiftAdjust (int thisP, int otherP)
 //
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
-/*
-void ForBack(int power, int distance)
-{
-	if (power != 0)
-	{
-		SensorValue[EncoderFrontLeft] = 0 ;
-		while(SensorValue[EncoderFrontLeft] <= distance)
-		{
-			motor[FrontLeft] = power;
-			motor[FrontRight] = power;
-			motor[BackRight] = power;
-			motor[BackLeft] = power;
-		}
-	}
-	StopMoving();
-}
-
-*/
-
-
-/*
-void MoveDiagonalReverse(int power, int distance)
-{
-	if (power > 0) // When power is 0, we should stop immediately
-	{
-		if (SensorValue[Jumper1] == 0) //Jumper 1 == 0 means that we are red. Otherwise, it means that we are blue
-		{
-			SensorValue[EncoderFrontRight] = 0;
-			while(SensorValue[EncoderFrontRight] <= distance)
-			{
-				motor[FrontRight] = -power;
-				motor[BackLeft] = -power;
-			}
-		}
-		else
-		{
-			SensorValue[EncoderFrontLeft] = 0;
-			while(SensorValue[EncoderFrontLeft] <= distance)
-			{
-				motor[FrontLeft] = power;
-				motor[BackRight] = power;
-			}
-		}
-	}
-
-	StopMoving();
-}
-
-
-void MoveDiagonal(int power, int distance)
-{
-	if (power > 0) // When power is 0, we should stop immediately
-	{
-		if (SensorValue[Jumper1] == 0) //Jumper 1 == 0 means that we are red. Otherwise, it means that we are blue
-		{
-			SensorValue[EncoderFrontRight] = 0;
-			while(SensorValue[EncoderFrontRight] <= distance)
-			{
-				motor[FrontRight] = -power;
-				motor[BackLeft] = -power;
-			}
-		}
-		else
-		{
-			SensorValue[EncoderFrontLeft] = 0;
-			while(SensorValue[EncoderFrontLeft] <= distance)
-			{
-				motor[FrontLeft] = -power;
-				motor[BackRight] = -power;
-			}
-		}
-	}
-
-	StopMoving();
-}
-
-void LeftRight(int power, int distance)
-{
-	if (power != 0) // When power is 0, we should stop immediately
-	{
-		if (SensorValue[Jumper1] == 0) //Jumper 1 == 0 means that we are red. Otherwise, it means that we are blue
-		{ // Red
-			power = -power;
-			SensorValue[EncoderFrontRight] = 0;
-			while(SensorValue[EncoderFrontRight] <= -distance)
-			{
-		   	motor[FrontLeft] = power;
-		    motor[FrontRight] = -power;
-		    motor[BackRight] = power;
-		    motor[BackLeft] = -power;
-		   }
-		}
-		else
-		{
-			SensorValue[EncoderFrontRight] = 0;
-			while(SensorValue[EncoderFrontRight] >= distance)
-			{
-		   	motor[FrontLeft] = power;
-		    motor[FrontRight] = -power;
-		    motor[BackRight] = power;
-		    motor[BackLeft] = -power;
-		   }
-		}
-	}
-
-	StopMoving();
-}
-*/
-
-
 void GyroRotateAndReadyCube(int angle)
 {
 	motor[CubeIntake] = -127;
@@ -1318,9 +1090,7 @@ void SonarRotate(int distance, int power)
 
 void EncoderRotate(int power)
 {
-
 	int left = nMotorEncoder(FrontLeft);
-//	int left = nMotorEncoder(FrontLeft);
 
 	left = left / 8;
 	if (power <= 0) return;
@@ -1432,91 +1202,33 @@ void StopLift()
     motor[RightLift2] = 0;
 }
 
-void AdjustAutoLift(int height)
+void AdjustAutoLiftUp()
 {
-		float power = -100;
+		int originalPower = 38;
+		int power = AdjustBatteryLevel(originalPower) * -1;
 
-		while (SensorValue[armPotentiometerLeft] < height)
+		if (nMotorEncoder(LeftLift2) > nMotorEncoder(RightLift1))
 		{
-			  motor[LeftLift1] = power;
-		    motor[LeftLift2] = power;
-		}
-
-		motor[LeftLift1] = 0;
-		motor[LeftLift2] = 0;
-
-
-		//while (SensorValue[armPotentiometerRight] < height)
-		//{
-		//	  motor[RightLift1] = power;
-		//    motor[RightLift2] = power;
-		//}
-
-		//motor[RightLift1] = 0;
-		//motor[RightLift2] = 0;
-
-}
-
-void LiftUpAndCloseCubeIntake(float power, int left, int right)
-{
-
-		float lp = power;
-		float rp = power * 0.75;
-
-		// ClearTimer(T2);
-
-		while(SensorValue[armPotentiometerLeft] < left
-				&& SensorValue[armPotentiometerRight] < right)
-		{
-		    motor[LeftLift1] = lp;
-		    motor[RightLift1] = rp;
-		    motor[LeftLift2] = lp;
-		    motor[RightLift2] = rp;
-
-		    if (SensorValue[armPotentiometerRight] > 1900)
-		    {
-		    	motor[CubeIntake] = -127;
+							
+				while(nMotorEncoder(LeftLift2)> nMotorEncoder(RightLift1))
+				{
+				    motor[LeftLift1] = power;
+				    motor[LeftLift2] = power;
+		//			writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
 				}
-		}
-
-
-		StopLift();
-}
-
-void LiftUp1(bool programmingSkill, float power, int left, int right)
-{
-		float lp = power;
-		float rp = power;
-
-
-		while(SensorValue[armPotentiometerLeft] < left
-				|| SensorValue[armPotentiometerRight] < right)
+				
+				StopLift();
+	}
+	else
+	{
+										
+		while(nMotorEncoder(RightLift1) > nMotorEncoder(LeftLift2))
 		{
-		    motor[LeftLift1] = lp;
-		    motor[RightLift1] = rp;
-		    motor[LeftLift2] = lp;
-		    motor[RightLift2] = rp;
+		    motor[RightLift1] = power;
+		    motor[RightLift2] = power;
+//			writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
 		}
-
+		
 		StopLift();
-
-	//	AdjustAutoLift(SensorValue[armPotentiometerRight]);
-}
-
-void LiftUpOld(float power, int left, int right)
-{
-		float lp = power;
-		float rp = power * 0.75;
-
-		while(SensorValue[armPotentiometerLeft] < left
-				&& SensorValue[armPotentiometerRight] < right)
-		{
-		    motor[LeftLift1] = lp;
-		    motor[RightLift1] = rp;
-		    motor[LeftLift2] = lp;
-		    motor[RightLift2] = rp;
-		}
-
-		StopLift();
-	//	AdjustAutoLift(SensorValue[armPotentiometerRight]);
+	}
 }
