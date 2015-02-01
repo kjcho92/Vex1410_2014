@@ -109,13 +109,13 @@ task autonomous()
 		int sonarRotationOriginalPower = 48;
 		int gyroRotationOriginalPower = 43;
 
-		/*if (SensorValue[Jumper1] == 1)
+		if (SensorValue[Jumper1] == 1)
 		{
 			//////////////////////
 			/// BLUE BLUE BLUE BLUE
-			sonarRotationOriginalPower = 48;
-			gyroRotationOriginalPower = 43;
-		}*/
+			sonarRotationOriginalPower = -48;
+			gyroRotationOriginalPower = -43;
+		}
 
 		ClearTimer(T3);
 
