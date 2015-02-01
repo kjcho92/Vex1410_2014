@@ -1,8 +1,8 @@
 #pragma config(I2C_Usage, I2C1, i2cSensors)
-#pragma config(Sensor, in1,    armPotentiometerLeft, sensorPotentiometer)
-#pragma config(Sensor, in2,    armPotentiometerRight, sensorPotentiometer)
-#pragma config(Sensor, in3,    GyroDown,       sensorNone)
-#pragma config(Sensor, in5,    CubeIntakePotentiometer, sensorPotentiometer)
+#pragma config(Sensor, in1,    armPotentiometerLeft, sensorNone)
+#pragma config(Sensor, in2,    yAccel,         sensorAccelerometer)
+#pragma config(Sensor, in3,    xAccel,         sensorAccelerometer)
+#pragma config(Sensor, in5,    CubeIntakePotentiometer, sensorNone)
 #pragma config(Sensor, dgtl7,  SonarSensor,    sensorSONAR_mm)
 #pragma config(Sensor, dgtl11, Jumper1,        sensorDigitalIn)
 #pragma config(Sensor, dgtl12, Jumper2,        sensorDigitalIn)
@@ -37,7 +37,7 @@ void SonarRotate(int distance, int power);
 void StopMoving();
 void EncoderRotate(int power);
 void EncoderRotateSmart(int power);
-void EncoderLiftUp(int power, int leftTarget, int rightTarget);
+void EncoderLiftUp(int index, int power, int leftTarget, int rightTarget);
 void EncoderLiftDown(int power, int leftTarget, int rightTarget);
 void Claw(int power);
 void PickUpSkyrise(int duration);
@@ -51,8 +51,10 @@ int AdjustBatteryLevel(int OriginalPower);
 /// Drive mode
 int GetLeftPower(int movingUp, int movingDown);
 int GetRightPower(int movingUp, int movingDown);
-int AdjustLiftPower(int pot1, int pot2);
+int AdjustLiftPower(int value);
 int ReverseIfNeeded(int power);
+
+int AdjustLiftPowerOld(int pot1, int pot2);
 
 bool MovingForward = true;
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -101,30 +103,34 @@ task autonomous()
 
 		//////////////////////
 		/// RED RED RED RED RED
+		// int sonarRotationOriginalPower = 48;
+		// int gyroRotationOriginalPower = 43;
+
 		int sonarRotationOriginalPower = 48;
 		int gyroRotationOriginalPower = 43;
 
 		/*if (SensorValue[Jumper1] == 1)
-		{ 
+		{
 			//////////////////////
 			/// BLUE BLUE BLUE BLUE
 			sonarRotationOriginalPower = 48;
 			gyroRotationOriginalPower = 43;
 		}*/
-		
+
 		ClearTimer(T3);
-		
-						
+
+
+		//for (int i = 0; i <= 1; i++)
 		for (int i = 0; i <= 6; i++)
 		{
 			// pick up skyrise
 			PickUpSkyrise(700);
 			wait1Msec (defaultDelay);
-	
+
 			nMotorEncoder(LeftLift2) = 0;
 			nMotorEncoder(RightLift1) = 0;
-	
-				
+
+
 			switch (i)
 			{
 				case 0:
@@ -132,25 +138,31 @@ task autonomous()
 				case 2: offset = 150; break;
 				case 3: offset = 300; break;
 				case 4: offset = 400; break;
-				case 5: offset = 520; break;
-				case 6: offset = 680; break;
+				case 5: offset = 580; break;
+				case 6: offset = 730; break;
 			}
-			
-			
-			int left = -1550 - (offset * i);
-			int right = -1550 - (offset * i);
-			
-			EncoderLiftUp(-127, left, right); // Lift up
+
+
+			int left = -1400 - (offset * i);
+			int right = -1400 - (offset * i);
+
+			EncoderLiftUp(i, -127, left, right); // Lift up
 	 		wait1Msec(defaultDelay);
-	
+
 			nMotorEncoder(FrontRight) = 0;
 			nMotorEncoder(FrontLeft) = 0;
-	
+
 			// rotate to the skyrise base
 			int sonarRotationPower = AdjustBatteryLevel(sonarRotationOriginalPower);
-			SonarRotate(300, sonarRotationPower);
+			
+			if (i >= 4)
+			{
+				sonarRotationPower = sonarRotationPower + 7;
+			}
+			
+			SonarRotate(200, sonarRotationPower);
 			wait1Msec (defaultDelay);
-		
+
 			int heightToDrop = 120;
 			if (0 == i)
 			{
@@ -160,32 +172,38 @@ task autonomous()
 			}
 			else if (1 == i)
 			{
-				heightToDrop = 200;
+				heightToDrop = 270;
 			}
-			
+
 			EncoderLiftDown(50, left + heightToDrop , right + heightToDrop); //Lift down
-			
+
 			wait1Msec (defaultDelay);
-	
+
 			ReleaseSkyrise(500);
 			writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
 
 			wait1Msec(shortDelay);
-	
+
 			EncoderLiftDown(60, 0, 0); //Lift down
 			wait1Msec(sshortDelay);
-	
+
 	//		gyroRotationAngle = SensorValue[GyroDown];
-	
-	
-	
+
+
+
 			// rotate to the autoload
 
 			int gyroRotationPower = AdjustBatteryLevel(gyroRotationOriginalPower);
-	
+
+			if (i >= 4)
+			{
+				gyroRotationPower = gyroRotationPower + 7;
+			}
+
+			
 			EncoderRotate(gyroRotationPower);
 //			wait1Msec(defaultDelay);
-	
+
 		}
 }
 
@@ -194,16 +212,11 @@ int AdjustBatteryLevel(int OriginalPower)
 	float AdjustBatteryLevel = nImmediateBatteryLevel;
   float BatteryOffset =	6000 / AdjustBatteryLevel;
   int WantedPower = OriginalPower * BatteryOffset;
-
-
-	writeDebugStreamLine("(AjustBattery) BatterLevel: %d - OriginalPower: %d - WantedPower: %d", AdjustBatteryLevel, OriginalPower, WantedPower);
-
-
+//	writeDebugStreamLine("(AjustBattery) BatterLevel: %d - OriginalPower: %d - WantedPower: %d", AdjustBatteryLevel, OriginalPower, WantedPower);
   return WantedPower;
 }
 
-
-void EncoderLiftUp(int power, int leftTarget, int rightTarget)
+void EncoderLiftUp(int index, int power, int leftTarget, int rightTarget)
 {
 	while(nMotorEncoder(LeftLift2) > leftTarget
 				|| nMotorEncoder(RightLift1) > rightTarget)
@@ -217,10 +230,18 @@ void EncoderLiftUp(int power, int leftTarget, int rightTarget)
 		}
 
 		StopLift();
-		wait1Msec(100);
 		
-		int adjustPower = 38;
-		AdjustAutoLiftUp(adjustPower);
+
+		writeDebugStreamLine("xAccel: (%d)", SensorValue[xAccel]);
+		
+		if (index > 3)
+		{
+			wait1Msec(50);
+    	int adjustPower = 21;
+			AdjustLiftUpSmart(adjustPower);
+		}
+		// int adjustPower = 38;
+		// AdjustAutoLiftUp(adjustPower);
 }
 
 void EncoderLiftDown(int power, int leftTarget, int rightTarget)
@@ -290,36 +311,33 @@ task usercontrol()
 	bool cubeIntakeTaking = false;
 	bool crayonIntakeTaking = false;
 
-	bool adjustIfWant = false;
-
 	while (true)
 	{
-		// ClearTimer(T2);
-		// while (time1[T2] < 100){}
-		
-		if (vexRT[Btn7U] == 1)
+
+		if (vexRT[Btn7U] == 1 && time1[T2] > 500)
 		{
 		 // reverse direction
 		   MovingForward = !MovingForward;
+		   ClearTimer(T2);
 		}
-		
-		if (vexRT[Btn7U] == 1 && -1650 > nMotorEncoder(LeftLift2) && nMotorEncoder(LeftLift2) > -5600)
+
+		if (vexRT[Btn7D] == 1 /*&& 980 < SensorValue[yAccel] && SensorValue[yAccel] < 1130 */)
 		{
     	// adjust lift only if it meets a certain condition
-			int adjustPower = 45;
+			int adjustPower = 30;
     	AdjustLiftUpSmart(adjustPower);
 		}
-		
+
 		int power2 = vexRT[Ch2]; // forward, backward
 		int power4 = vexRT[Ch4]; // rotate
 		int power7 = 60; // shift
-		
+
 		power2 = ReverseIfNeeded(power2);
 		power7 = ReverseIfNeeded(power7);
-		
+
 		int btn7r = vexRT[Btn7R]; // shift
 		int btn7l = vexRT[Btn7L]; // shift
-		
+
 		//standard drive motor block
 		motor[FrontLeft] = power2 + power4 + btn7r * power7 - btn7l * power7;
 		motor[FrontRight] = power2 - power4 - btn7r * power7 + btn7l * power7;
@@ -334,39 +352,46 @@ task usercontrol()
 	  int btn8r = vexRT[Btn8R]; // lift adjust
 	  int btn8l = vexRT[Btn8L]; // lift adjust
 
+	  if (btn8r + btn8l)
+	  {
+	  	SensorValue[xAccel] = 0;
+	  }
+
 	  int btn8d = vexRT[Btn8D]; // lift down
 	  int btn8u = vexRT[Btn8U]; // lift up
 
-	  if (nMotorEncoder(LeftLift2) < -5680 || nMotorEncoder(RightLift1) < -5680)
-		{ 
+	  if (SensorValue[yAccel] <= -55 )
+		{
 			  // stop when the lift is too high
 				btn8u = 0;
 		}
-				
+
 		int lp = 127;
 		int rp = 127;
+
+		bool adjustIfWant = true;
 
 		if (adjustIfWant == true)
 		{
 			lp = GetLeftPower(btn8u, btn8d);
 			rp = GetRightPower(btn8u, btn8d);
-	
+
 			if (lp + rp > 0)
 			{
 				writeDebugStreamLine("lp:rp => (%d : %d)", lp, rp);
 			}
 		}
-		  
+
 		motor[LeftLift1] =  (btn8d - btn8u) * lp + btn8l * 25 - btn8r * 25;
 		motor[LeftLift2] =  (btn8d - btn8u) * lp + btn8l * 25 - btn8r * 25;
 		motor[RightLift1] = (btn8d - btn8u) * rp + btn8r * 25 - btn8l * 25;
 		motor[RightLift2] = (btn8d - btn8u) * rp + btn8r * 25 - btn8l * 25;
-	
+
     if (btn8d + btn8u + btn8r + btn8l == 0)
     {
 			lp = 0;
 			rp = 0;
-	
+
 			motor[LeftLift1] = motor[LeftLift2] = lp;
 			motor[RightLift1] = motor[RightLift2] = rp;
 		}
@@ -377,12 +402,12 @@ task usercontrol()
 		if (btn5d == 1)
 		{
 			cubeIntakeTaking = false;
-			motor[CubeIntake] = (btn5u - btn5d) * 127;
+			motor[CubeIntake] = (btn5d - btn5u) * 127;
 		}
 		else if (btn5u == 1)
 		{
 			cubeIntakeTaking = true;
-			motor[CubeIntake] = (btn5u - btn5d) * 127;
+			motor[CubeIntake] = (btn5d - btn5u) * 127;
 		}
 		else if (btn5u == 0 && btn5d == 0 && cubeIntakeTaking)
 		{
@@ -430,46 +455,56 @@ int GetLeftPower(int movingUp, int movingDown)
 {
 	// No buttons pressed
 	if (movingUp + movingDown == 0) return 0;
-	
+
 	const int fullPowerUp = 127;
 	const int fullPowerDown = 127;
 //	const float delta = 0.6;
 //	const float delta_Down = 0.6;
 
-	int leftPot = nMotorEncoder(LeftLift2) * -1;
-	int rightPot = nMotorEncoder(RightLift1) * -1;
+	int height = SensorValue[yAccel] * -1;
+	int value = SensorValue[xAccel];
+	// int rightPot = nMotorEncoder(RightLift1) * -1;
     // On moving up
   if (movingUp == 1)
 	{
 	  // when started moving, give full power.
-		if (1650 > leftPot)
+		if (8 > height || abs(value) <= 5)
 		{
 			return fullPowerUp;
 		}
 
-		// when the right is higher, give full power
-		if (leftPot <= rightPot)
-		{
+
+		/*
+				if (value < 0)
+		{// xAccel is "-". left is lower
+			motor[LeftLift1] = power;
+	    motor[LeftLift2] = power;
+		}
+*/
+
+		if (value < 0)
+		{ // left is lower
 			return fullPowerUp;
 		}
 		else
 		{
       // when the left is higher, slow down
-			return AdjustLiftPower(rightPot, leftPot);
+			return AdjustLiftPower(abs(value));
 		}
 	}
     // On moving down
 	else if (movingDown == 1)
 	{
+		return fullPowerDown;
     // when the left is higher, give full power
-		if (leftPot >= rightPot)
-		{
+		if (value > 0)
+		{ // left is higher
 			return fullPowerDown;
 		}
 		else
 		{
 			// when the right is higher, slow down
-     	return AdjustLiftPower(leftPot, rightPot);
+     	return AdjustLiftPower(abs(value));
 		}
 	}
 
@@ -480,51 +515,64 @@ int GetRightPower(int movingUp, int movingDown)
 {
 	// No buttons pressed
 	if (movingUp + movingDown == 0) return 0;
-	
+
 	const int fullPowerUp = 127;
 	const int fullPowerDown = 127;
 
-	int leftPot = nMotorEncoder(LeftLift2) * -1;
-	int rightPot = nMotorEncoder(RightLift1) * -1;
+	int height = SensorValue[yAccel] * -1;
+	int value = SensorValue[xAccel];
 
   if (movingUp == 1)
 	{
 	  // when started moving, give full power.
-		if (1650 > leftPot)
+		if (8 > height || abs(value) <= 5)
 		{
 			return fullPowerUp;
 		}
 
 		// when the left is higher, give full power
-		if (rightPot <= leftPot)
-		{
+		if (value > 0)
+		{// right is lower
 			return fullPowerUp;
 		}
 		else
 		{
       // when the right is higher, slow down
-     	return AdjustLiftPower(leftPot, rightPot);
+     	return AdjustLiftPower(abs(value));
 		}
 	}
     // On moving down
 	else if (movingDown == 1)
 	{
+			return fullPowerDown;
+
     // when the right is higher, give full power
-		if (rightPot >= leftPot)
-		{
+		if (value < 0)
+		{// right is higher
 			return fullPowerDown;
 		}
 		else
 		{
 			// when the left is higher, slow down
-			return AdjustLiftPower(rightPot, leftPot);
+			return AdjustLiftPower(abs(value));
 		}
 	}
 
 	return 0;
 }
 
-int AdjustLiftPower(int pot1, int pot2)
+
+int AdjustLiftPower(int value)
+{
+	const int fullPower = 127;
+
+	// float offset = (2 / value) * 100;
+	int power = fullPower - (value * 3);
+	if (power < 0) power = 0;
+	return power;
+}
+
+int AdjustLiftPowerOld(int pot1, int pot2)
 {
 	const int fullPower = 127;
 
@@ -592,6 +640,9 @@ void EncoderRotate(int power)
 	}
 
 	StopMoving();
+	
+	writeDebugStreamLine("(Rotate) left (%d), nMotorEncoder FrontLeft (%d)", left, nMotorEncoder(FrontLeft));
+			
 }
 
 
@@ -631,16 +682,17 @@ void AdjustAutoLiftUp(int originalPower)
 		{
 			while(nMotorEncoder(LeftLift2)> nMotorEncoder(RightLift1))
 			{
-					if (vexRT[Btn8D] + vexRT[Btn8U] + vexRT[Btn8R] + vexRT[Btn8L] > 0) 
+					if (vexRT[Btn8D] + vexRT[Btn8U] + vexRT[Btn8R] + vexRT[Btn8L] > 0)
 					{ // return if a button is pressed
 						break;
 					}
-
-			    motor[LeftLift1] = power;
+				
+		      motor[LeftLift1] = power;
 			    motor[LeftLift2] = power;
-	//			writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
+		    
+			  	writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
 			}
-			
+
 			StopLift();
 	}
 	else
@@ -651,12 +703,14 @@ void AdjustAutoLiftUp(int originalPower)
 				{ // return if a button is pressed
 						break;
 				}
-					
-		    motor[RightLift1] = power;
-		    motor[RightLift2] = power;
+				
+					motor[RightLift1] = power;
+					motor[RightLift2] = power;
+	
+	//		
 //			writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
 		}
-		
+
 		StopLift();
 	}
 }
@@ -674,7 +728,7 @@ void EncoderRotateSmart(int power)
 			int previous = current;
 			Rotate(power);
 			int current = nMotorEncoder(FrontLeft);
-			
+
 			offset = current - previous;
 			// if (current + offset > 0) break;
 		}
@@ -686,61 +740,39 @@ void EncoderRotateSmart(int power)
 void AdjustLiftUpSmart(int originalPower)
 {
 	int power = AdjustBatteryLevel(originalPower) * -1;
+	int value = SensorValue[xAccel];
+
+	if (-1 <= value && value <= 1) return;
+
 	int offset = 0;
-
-	int leftPot = nMotorEncoder(LeftLift2);
-	int rightPot = nMotorEncoder(RightLift1);
-
-	if (leftPot > rightPot)
+	int current = abs(value);
+	int original = value;
+	while(current - offset > 0)
 	{
-		int current = leftPot;
+		if (vexRT[Btn8D] + vexRT[Btn8U] + vexRT[Btn8R] + vexRT[Btn8L] > 0)
+		{ // return if a button is pressed
+			break;
+		}
 
-		while(current + offset > rightPot)
-		{
-			if (vexRT[Btn8D] + vexRT[Btn8U] + vexRT[Btn8R] + vexRT[Btn8L] > 0) 
-			{ // return if a button is pressed
-				break;
-			}
+		int previous = current;
 
-			int previous = current;
 
-	    motor[LeftLift1] = power;
+		if (value < 0)
+		{// xAccel is "-". left is lower
+			motor[LeftLift1] = power;
 	    motor[LeftLift2] = power;
-	    
-	    int current = nMotorEncoder(LeftLift2);
-	    
-	    offset = current - previous;
-	    // if (current + offset < nMotorEncoder(RightLift1)) break;
-	    
-//			writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
 		}
-		
-		StopLift();
-	}
-	else
-	{
-		int current = rightPot;
-	
-		while(current + offset > leftPot)
-		{
-				if (vexRT[Btn8D] + vexRT[Btn8U] + vexRT[Btn8R] + vexRT[Btn8L] > 0)
-				{ // return if a button is pressed
-						break;
-				}
-	
-				int previous = current;
-									
-		    motor[RightLift1] = power;
-		    motor[RightLift2] = power;
-		    
-		    int current = nMotorEncoder(RightLift1);
-		    
-		    offset = current - previous;
-		    // if (current + offset < nMotorEncoder(LeftLift2)) break;
-		    
-	//			writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
+		else
+		{// xAccel is "+". left is higher
+			motor[RightLift1] = power;
+			motor[RightLift2] = power;
 		}
-		
-		StopLift();
+
+    current = abs(SensorValue[xAccel]);
+
+    offset =  (previous - current) * 2;
 	}
+
+	StopLift();
+	writeDebugStreamLine("AdjustLift original (%d) , current (%d), offset (%d), xAccel (%d)", original, current, offset, SensorValue[xAccel]);
 }
