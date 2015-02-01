@@ -3,6 +3,7 @@
 #pragma config(Sensor, in2,    yAccel,         sensorAccelerometer)
 #pragma config(Sensor, in3,    xAccel,         sensorAccelerometer)
 #pragma config(Sensor, in5,    CubeIntakePotentiometer, sensorNone)
+#pragma config(Sensor, dgtl1,  LedOne,         sensorLEDtoVCC)
 #pragma config(Sensor, dgtl7,  SonarSensor,    sensorSONAR_mm)
 #pragma config(Sensor, dgtl11, Jumper1,        sensorDigitalIn)
 #pragma config(Sensor, dgtl12, Jumper2,        sensorDigitalIn)
@@ -56,7 +57,9 @@ int ReverseIfNeeded(int power);
 
 int AdjustLiftPowerOld(int pot1, int pot2);
 
-bool MovingForward = true;
+bool MovingForward = true
+int ledToggle();
+int ledValue = 1;
 /////////////////////////////////////////////////////////////////////////////////////////
 //																																										 //
 //                          Pre-Autonomous Functions																	 //
@@ -332,6 +335,7 @@ task usercontrol()
 		{
 		 // reverse direction
 		   MovingForward = !MovingForward;
+		   SensorValue[LedOne] = ledToggle();
 		   ClearTimer(T2);
 		}
 
@@ -803,4 +807,18 @@ void AdjustLiftUpSmart(int originalPower)
 
 	StopLift();
 	writeDebugStreamLine("AdjustLift original (%d) , current (%d), offset (%d), xAccel (%d)", original, current, offset, SensorValue[xAccel]);
+}
+
+//toogles the value of led
+int ledToggle()
+{
+	if (ledValue < 0)
+	{
+		ledValue = 0;
+	}
+  else
+  {
+  	ledValue = 1;
+  }
+  return ledValue;
 }
