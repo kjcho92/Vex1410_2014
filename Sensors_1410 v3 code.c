@@ -157,7 +157,12 @@ task autonomous()
 			
 			if (i >= 4)
 			{
-				sonarRotationPower = sonarRotationPower + 7;
+				int val = 3 + i;
+				
+				int increasing = AdjustBatteryLevel(val);
+				sonarRotationPower = sonarRotationPower + increasing;
+				writeDebugStreamLine("sonarRotationPower (%d), increasing (%d)", sonarRotationPower, increasing);
+		
 			}
 			
 			SonarRotate(200, sonarRotationPower);
@@ -179,7 +184,7 @@ task autonomous()
 
 			wait1Msec (defaultDelay);
 
-			ReleaseSkyrise(500);
+			ReleaseSkyrise(300);
 			writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
 
 			wait1Msec(shortDelay);
@@ -197,7 +202,13 @@ task autonomous()
 
 			if (i >= 4)
 			{
-				gyroRotationPower = gyroRotationPower + 7;
+					int val = 3 + i;
+				
+				int increasing = AdjustBatteryLevel(val);
+				gyroRotationPower = gyroRotationPower + increasing;
+				writeDebugStreamLine("gyroRotationPower (%d), increasing (%d)", gyroRotationPower, increasing);
+		
+			
 			}
 
 			
