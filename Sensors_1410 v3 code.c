@@ -109,19 +109,22 @@ task autonomous()
 		int sonarRotationOriginalPower = 48;
 		int gyroRotationOriginalPower = 43;
 
-		if (SensorValue[Jumper1] == 1)
-		{
+		int iterationcount = 1;
+		
+		if (SensorValue[Jumper1] == 0)
+		{			
 			//////////////////////
 			/// BLUE BLUE BLUE BLUE
-			sonarRotationOriginalPower = -48;
-			gyroRotationOriginalPower = -43;
-		}
+			sonarRotationOriginalPower = 45;
+			gyroRotationOriginalPower = 53;
+			iterationcount = 1;
+			}
 
 		ClearTimer(T3);
 
-
+		
 		//for (int i = 0; i <= 1; i++)
-		for (int i = 0; i <= 6; i++)
+		for (int i = 0; i <= iterationcount; i++)
 		{
 			// pick up skyrise
 			PickUpSkyrise(700);
@@ -629,6 +632,14 @@ void SonarRotate(int distance, int power)
 			Rotate(power);
 		}
 	}
+		else
+		{					
+			while (SensorValue[SonarSensor] > distance)
+				{
+					Rotate(power);
+				}
+		}
+
 
 	StopMoving();
 //	return SensorValue[GyroDown];
@@ -649,7 +660,13 @@ void EncoderRotate(int power)
 			Rotate(power);
 		}
 	}
-
+	else
+	{ // BLUE
+		while (nMotorEncoder(FrontLeft) > left)
+		{
+			Rotate(-power);
+		}
+	}
 	StopMoving();
 	
 	writeDebugStreamLine("(Rotate) left (%d), nMotorEncoder FrontLeft (%d)", left, nMotorEncoder(FrontLeft));
