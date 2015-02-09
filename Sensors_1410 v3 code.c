@@ -116,15 +116,15 @@ task autonomous()
 
 		//////////////////////
 		/// RED RED RED RED RED
-		int sonarRotationOriginalPower = 52;
+		int sonarRotationOriginalPower = 51;
 		int gyroRotationOriginalPower = 90;
-		int iterationcount = 6;
+		int iterationcount = 1;
 
 		if (SensorValue[Jumper1] == 0)
 		{
 			//////////////////////
 			/// BLUE BLUE BLUE BLUE
-			sonarRotationOriginalPower = 42;
+			sonarRotationOriginalPower = 44;
 			gyroRotationOriginalPower = 90;
 			iterationcount = 1;
 		}
@@ -168,12 +168,12 @@ task autonomous()
 			// rotate to the skyrise base
 			int sonarRotationPower = AdjustBatteryLevel(sonarRotationOriginalPower);
 
-			/*
+
 			if (0 == i)
 			{
-				sonarRotationPower = sonarRotationPower + 5;
+				sonarRotationPower = sonarRotationPower;
 			}
-			else if (i >= 1)
+			/*else if (i >= 1)
 			{
 				int val = 3 + i;
 
@@ -182,7 +182,7 @@ task autonomous()
 				writeDebugStreamLine("sonarRotationPower (%d), increasing (%d)", sonarRotationPower, increasing);
 			}*/
 
-			SonarRotate(200, sonarRotationPower);
+			SonarRotate(220, sonarRotationPower);
 			wait1Msec (defaultDelay);
 
 			int heightToDrop = 120;
@@ -222,7 +222,7 @@ task autonomous()
 */
 			// rotate to the autoload
 			EncoderRotateSmart(gyroRotationPower);
-			
+
 			/*
 			if (SensorValue[Jumper1] == 1)
 			{ // RED
@@ -234,7 +234,7 @@ task autonomous()
 			}*/
 			wait1Msec(sshortDelay); // didn't have this. might not need.
 		}
-		
+
 		/*
 		if (false)
 		{
@@ -382,7 +382,7 @@ task usercontrol()
 {
 	bool cubeIntakeTaking = false;
 	bool crayonIntakeTaking = false;
-	
+
 	bool adjustIfWant = true;
 
 	while (true)
@@ -685,10 +685,10 @@ void SonarRotate(int distance, int power)
 	{ // RED
 		power = -power;
 	}
-	
+
 	Rotate(power);
 	wait1Msec (1000);
-	
+
 	// power = -30;
 	while (abs(SensorValue[SonarSensor]) > distance /*&& abs(nMotorEncoder(FrontLeft)) < 450 */)
 	{
@@ -762,7 +762,7 @@ void PickUpSkyrise(int duration)
 {
 		Claw(127);
 		wait1Msec(duration);
-		Claw(50); // 30 -> 70
+		Claw(70); // 30 -> 70
 }
 
 void ReleaseSkyrise(int duration)
