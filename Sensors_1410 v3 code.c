@@ -2,7 +2,7 @@
 #pragma config(Sensor, in1,    armPotentiometerLeft, sensorNone)
 #pragma config(Sensor, in2,    yAccel,         sensorAccelerometer)
 #pragma config(Sensor, in3,    xAccel,         sensorAccelerometer)
-#pragma config(Sensor, in5,    lightSensor,    sensorReflection)
+#pragma config(Sensor, in5,    lightSensor,    sensorNone)
 #pragma config(Sensor, dgtl7,  SonarSensor,    sensorSONAR_mm)
 #pragma config(Sensor, dgtl11, Jumper1,        sensorDigitalIn)
 #pragma config(Sensor, dgtl12, Jumper2,        sensorDigitalIn)
@@ -35,13 +35,9 @@
 /// Autonomous mode - Using
 void SonarRotate(int distance, int power);
 void StopMoving();
-void EncoderRotate(int power);
-void EncoderRotateFaster(int power);
 void EncoderRotateSmart(int power);
-void EncoderLiftUpAccel(int index, int power, int target);
 void EncoderLiftUp(int index, int power, int target);
 void EncoderLiftDown(int sequence, int power, int target);
-void EncoderLiftDownAccel(int sequence, int power, int target);
 void Claw(int power);
 void PickUpSkyrise(int duration);
 void ReleaseSkyrise(int duration);
@@ -298,78 +294,6 @@ void EncoderLiftDown(int sequence, int power, int target)
 			while (time100[T2] <= 3) {};
 			Claw(0);
 		}
-}
-
-void EncoderLiftUpAccel(int index, int power, int target)
-{
-
-    motor[LeftLift1] = power;
-    motor[RightLift1] = power;
-    motor[LeftLift2] = power;
-    motor[RightLift2] = power;
-
-    wait1Msec(500);
-
-	// SensorValue[yAccel] <= -58
-	while(SensorValue[yAccel] >= target)
-		{
-		    motor[LeftLift1] = power;
-		    motor[RightLift1] = power;
-		    motor[LeftLift2] = power;
-		    motor[RightLift2] = power;
-
-//			writeDebugStreamLine("(LiftUp) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
-		}
-
-		StopLift();
-
-
-		writeDebugStreamLine("xAccel: (%d)", SensorValue[xAccel]);
-
-		if (index > 2)
-		{
-			wait1Msec(50);
-    	int adjustPower = 21;
-			AdjustLiftUpSmart(3, 7, adjustPower);
-		}
-		// int adjustPower = 38;
-		// AdjustAutoLiftUp(adjustPower);
-}
-
-void EncoderLiftDownAccel(int sequence, int power, int target)
-{
-	bool closingClaw = false;
-	ClearTimer(T2);
-
-	if (sequence == 1)
-	{
-		closingClaw = true;
-		Claw(-127);
-	}
-
-	while(SensorValue[yAccel] < target)
-	{
-	    motor[LeftLift1] = power;
-	    motor[RightLift1] = power;
-	    motor[LeftLift2] = power;
-	    motor[RightLift2] = power;
-
-	    if (closingClaw && time100[T2] > 2)
-	    {
-				Claw(0);
-				closingClaw = false;
-	    }
-
-//			writeDebugStreamLine("(LiftDown) LEFT: %d , RIGHT: %d", nMotorEncoder(LeftLift2), nMotorEncoder(RightLift1));
-	}
-
-	StopLift();
-
-	if (closingClaw)
-	{
-		while (time100[T2] <= 3) {};
-		Claw(0);
-	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -698,63 +622,6 @@ void SonarRotate(int distance, int power)
 	}
 
 	StopMoving();
-//	return SensorValue[GyroDown];
-}
-
-
-void EncoderRotateFaster(int power)
-{
-	int left = nMotorEncoder(FrontLeft);
-
-	left = left / 5;
-	if (power <= 0) return;
-
-	if (left < 0)
-	{ // RED
-		while (nMotorEncoder(FrontLeft) < left)
-		{
-			Rotate(power);
-		}
-	}
-	else
-	{ // BLUE
-		while (nMotorEncoder(FrontLeft) > left)
-		{
-			Rotate(-power);
-		}
-	}
-	StopMoving();
-
-	writeDebugStreamLine("(Rotate) left (%d), nMotorEncoder FrontLeft (%d)", left, nMotorEncoder(FrontLeft));
-
-}
-
-
-
-void EncoderRotate(int power)
-{
-	int left = nMotorEncoder(FrontLeft);
-
-	left = left / 8;
-	if (power <= 0) return;
-
-	if (left < 0)
-	{ // RED
-		while (nMotorEncoder(FrontLeft) < left)
-		{
-			Rotate(power);
-		}
-	}
-	else
-	{ // BLUE
-		while (nMotorEncoder(FrontLeft) > left)
-		{
-			Rotate(-power);
-		}
-	}
-	StopMoving();
-
-	writeDebugStreamLine("(Rotate) left (%d), nMotorEncoder FrontLeft (%d)", left, nMotorEncoder(FrontLeft));
 }
 
 void PickUpSkyrise(int duration)
@@ -869,7 +736,6 @@ void EncoderRotateSmart(int power)
 
 			offset = current - previous;
 			offset = offset * 1.5;
-			// if (current + offset > 0) break;
 		}
 	}
 
