@@ -121,15 +121,15 @@ task autonomous()
 
 		//////////////////////
 		/// RED RED RED RED RED
-		int sonarRotationOriginalPower = 44;
+		int sonarRotationOriginalPower = 45;
 		int gyroRotationOriginalPower = 90;
-		int iterationcount = 1;
+		int iterationcount = (SensorValue[Jumper3] == 1) ? 1 : 6;
 
 		if (SensorValue[Jumper1] == 0)
 		{
 			//////////////////////
 			/// BLUE BLUE BLUE BLUE
-			sonarRotationOriginalPower = 44;
+			sonarRotationOriginalPower = 40;
 			gyroRotationOriginalPower = 90;
 			iterationcount = 1;
 		}
@@ -155,8 +155,10 @@ task autonomous()
 			nMotorEncoder(LeftLift2) = 0;
 			nMotorEncoder(RightLift1) = 0;
 
-			int offset = 0;
+			wait1Msec (sshortDelay); // <- wasn't there
 
+			int offset = 0;
+/*
 			switch (i)
 			{
 				case 0: offset = -1600; break;
@@ -167,8 +169,19 @@ task autonomous()
 				case 5: offset = -4500; break;
 				case 6: offset = -5700; break;
 			}
+*/
+			switch (i)
+			{
+				case 0: offset = -1350; break;
+				case 1: offset = -1530; break;
+				case 2: offset = -1650; break;
+				case 3: offset = -2100; break;
+				case 4: offset = -2800; break;
+				case 5: offset = -3800; break;
+				case 6: offset = -5300; break;
+			}
 
-			EncoderLiftUp(i, -127, offset); // Lift up
+			EncoderLiftUp(i, -80, offset); // Lift up
 	 		wait1Msec(defaultDelay);
 
 			nMotorEncoder(FrontRight) = 0;
@@ -239,7 +252,7 @@ int AdjustBatteryLevel(int OriginalPower)
 	float AdjustBatteryLevel = nImmediateBatteryLevel;
   float BatteryOffset =	6000 / AdjustBatteryLevel;
   int WantedPower = OriginalPower * BatteryOffset;
-//	writeDebugStreamLine("(AjustBattery) BatterLevel: %d - OriginalPower: %d - WantedPower: %d", AdjustBatteryLevel, OriginalPower, WantedPower);
+//  writeDebugStreamLine("(AjustBattery) BatterLevel: %d - OriginalPower: %d - WantedPower: %d", AdjustBatteryLevel, OriginalPower, WantedPower);
   return WantedPower;
 }
 
@@ -263,8 +276,8 @@ void EncoderLiftUp(int index, int power, int target)
 		if (index > 1)
 		{
 			wait1Msec(50);
-    	int adjustPower = 21;
-			AdjustLiftUpSmart(3, 7, adjustPower);
+    	int adjustPower = 27;
+			AdjustLiftUpSmart(4, 4, adjustPower);
 		}
 		// int adjustPower = 38;
 		// AdjustAutoLiftUp(adjustPower);
@@ -393,20 +406,20 @@ task usercontrol()
 				btn8u = 0;
 		}
 
-		int lp = 77;
-		int rp = 77;
+		int lp = 78;
+		int rp = 78;
 
 		if (accelUsed == true && adjustIfWant == true)
 		{
 			if (SensorValue[yAccel] >= -13)
 			{
-				lp = 77;
-				rp = 77;
+				lp = 78;
+				rp = 78;
 
 				if (btn8d > 0)
 				{
-					lp = 50;
-					rp = 50;
+					lp = 60;
+					rp = 60;
 				}
 			}
 			else
@@ -791,7 +804,7 @@ void EncoderRotateSmart(int power)
 			int current = nMotorEncoder(FrontLeft);
 
 			offset = current - previous;
-			offset = offset * 1.5;
+			offset = offset * 1.7;
 		}
 	}
 
