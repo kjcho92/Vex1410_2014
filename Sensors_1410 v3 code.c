@@ -4,8 +4,9 @@
 #pragma config(Sensor, in3,    xAccel,         sensorAccelerometer)
 #pragma config(Sensor, in5,    lightSensor,    sensorNone)
 #pragma config(Sensor, dgtl7,  SonarSensor,    sensorSONAR_mm)
-#pragma config(Sensor, dgtl11, Jumper1,        sensorDigitalIn)
-#pragma config(Sensor, dgtl12, Jumper2,        sensorDigitalIn)
+#pragma config(Sensor, dgtl10, Jumper3,        sensorDigitalIn)
+#pragma config(Sensor, dgtl11, Jumper2,        sensorDigitalIn)
+#pragma config(Sensor, dgtl12, Jumper1,        sensorDigitalIn)
 #pragma config(Sensor, I2C_1,  FrontLeftEncoder, sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Sensor, I2C_2,  FrontRightEncoder, sensorQuadEncoderOnI2CPort,    , AutoAssign)
 #pragma config(Sensor, I2C_3,  RightLiftEncoder, sensorQuadEncoderOnI2CPort,    , AutoAssign)
@@ -42,9 +43,15 @@ void Claw(int power);
 void PickUpSkyrise(int duration);
 void ReleaseSkyrise(int duration);
 void StopLift();
-void AdjustAutoLiftUp(int originalPower);
 void AdjustLiftUpSmart(int timeout, int threshold, int originalPower);
 int AdjustBatteryLevel(int OriginalPower);
+
+void ForBack(int power, int distance);
+////////////////////////////////////////////////////
+/// Autonomous mode - Not using
+// void ForBack(int power, int distance);
+// void ReleaseCube(int duration,int power);
+// void AdjustAutoLiftUp(int originalPower);
 
 ////////////////////////////////////////////////////
 /// Drive mode
@@ -55,7 +62,7 @@ int ReverseIfNeeded(int power);
 
 int AdjustLiftPowerOld(int pot1, int pot2);
 
-bool MovingForward = true;
+bool MovingForward = false;
 
 const	int sshortDelay = 25;
 const	int shortDelay = 50;
@@ -100,30 +107,44 @@ void pre_auton()
 
 task autonomous()
 {
-	/*
-		int defaultHeight = -1200;
-		int secondSkyrise = 130;
-		int thirdSkyrise = 200;
-*/
-		/*
-		if (nImmediateBatteryLevel < 7500)
+		if (SensorValue[Jumper3] == 0)
 		{
-			defaultHeight = -1250;
-			secondSkyrise = 0;
-			thirdSkyrise = 0;
-		}*/
+			nMotorEncoder(RightLift1) = 0;
+			EncoderLiftUp(0, -125, -1800); // Lift up
+
+			wait1Msec (2000);
+
+			EncoderLiftDown(0, 80, 0); //Lift down
+			wait1Msec(sshortDelay);
+
+			return;
+		}
+
+		if (SensorValue[Jumper2] == 0)
+		{
+			nMotorEncoder(RightLift1) = 0;
+			EncoderLiftUp(0, -80, -1800); // Lift up
+
+			wait1Msec (2000);
+
+			nMotorEncoder(FrontLeft) = 0;
+			ForBack(90, 200);
+
+			return;
+		}
 
 		//////////////////////
 		/// RED RED RED RED RED
-		int sonarRotationOriginalPower = 51;
+		int sonarRotationOriginalPower = 45;
 		int gyroRotationOriginalPower = 90;
-		int iterationcount = 2;
+		// int iterationcount = (SensorValue[Jumper3] == 1) ? 1 : 6;
+		int iterationcount = 6;
 
 		if (SensorValue[Jumper1] == 0)
 		{
 			//////////////////////
 			/// BLUE BLUE BLUE BLUE
-			sonarRotationOriginalPower = 44;
+			sonarRotationOriginalPower = 38;
 			gyroRotationOriginalPower = 90;
 			iterationcount = 1;
 		}
@@ -142,15 +163,30 @@ task autonomous()
 			*/
 
 			// pick up skyrise
-			PickUpSkyrise(powerFortakingSkyrise); // 700 -> 500
-			powerFortakingSkyrise = 700;
+			PickUpSkyrise(powerFortakingSkyrise); //700 -> 500
+			powerFortakingSkyrise = 500;
 			wait1Msec (defaultDelay);
 
 			nMotorEncoder(LeftLift2) = 0;
 			nMotorEncoder(RightLift1) = 0;
 
+			wait1Msec (sshortDelay); // <- wasn't there
+
 			int offset = 0;
 
+			switch (i)
+			{
+				case 0: offset = -1350; break;
+				case 1: offset = -1600; break;
+				case 2: offset = -1850; break;
+				case 3: offset = -2200; break;
+				case 4: offset = -3020; break;
+				case 5: offset = -4070; break;
+				case 6: offset = -5500; break;
+			}
+
+
+			/*
 			switch (i)
 			{
 				case 0: offset = -1600; break;
@@ -160,10 +196,35 @@ task autonomous()
 				case 4: offset = -3300; break;
 				case 5: offset = -4500; break;
 				case 6: offset = -5700; break;
+			}*/
+/*
+			switch (i)
+			{
+				case 0: offset = -950; break;
+				case 1: offset = -1100; break;
+				case 2: offset = -1100; break;
+				case 3: offset = -1518; break;
+				case 4: offset = -1911; break;
+				case 5: offset = -2919; break;
+				case 6: offset = -3608; break;
 			}
+/*
+			switch (i)
+			{
+				case 0: offset = -870; break;
+				case 1: offset = -950; break;
+				case 2: offset = -1000; break;
+				case 3: offset = -1518; break;
+				case 4: offset = -1911; break;
+				case 5: offset = -2919; break;
+				case 6: offset = -3608; break;
+			}
+*/
 
-			EncoderLiftUp(i, -127, offset); // Lift up
-	 		wait1Msec(defaultDelay);
+
+
+			EncoderLiftUp(i, -125, offset); // Lift up
+	 		wait1Msec(shortDelay);
 
 			nMotorEncoder(FrontRight) = 0;
 			nMotorEncoder(FrontLeft) = 0;
@@ -186,17 +247,22 @@ task autonomous()
 			}*/
 
 			SonarRotate(220, sonarRotationPower);
-			wait1Msec (defaultDelay);
+			wait1Msec (shortDelay);
 
 			int heightToDrop = 250;
 			if (0 == i)
 			{
 				heightToDrop = -offset;
 			}
+			else if (1 == i)
+			{
+			  heightToDrop = -offset - 850;
+			}
+
 
 			EncoderLiftDown(0, 50, offset + heightToDrop); //Lift down
 
-			wait1Msec (defaultDelay);
+			wait1Msec (sshortDelay);
 
 			ReleaseSkyrise(30); // 300 -> 30
 			writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
@@ -228,7 +294,7 @@ int AdjustBatteryLevel(int OriginalPower)
 	float AdjustBatteryLevel = nImmediateBatteryLevel;
   float BatteryOffset =	6000 / AdjustBatteryLevel;
   int WantedPower = OriginalPower * BatteryOffset;
-//	writeDebugStreamLine("(AjustBattery) BatterLevel: %d - OriginalPower: %d - WantedPower: %d", AdjustBatteryLevel, OriginalPower, WantedPower);
+//  writeDebugStreamLine("(AjustBattery) BatterLevel: %d - OriginalPower: %d - WantedPower: %d", AdjustBatteryLevel, OriginalPower, WantedPower);
   return WantedPower;
 }
 
@@ -249,11 +315,11 @@ void EncoderLiftUp(int index, int power, int target)
 
 		writeDebugStreamLine("xAccel: (%d)", SensorValue[xAccel]);
 
-		if (index > 2)
+		if (index > 1)
 		{
 			wait1Msec(50);
     	int adjustPower = 21;
-			AdjustLiftUpSmart(3, 7, adjustPower);
+			AdjustLiftUpSmart(3, 4, adjustPower);
 		}
 		// int adjustPower = 38;
 		// AdjustAutoLiftUp(adjustPower);
@@ -310,10 +376,19 @@ task usercontrol()
 	bool cubeIntakeTaking = false;
 	bool crayonIntakeTaking = false;
 
+	bool previousDown = false;
+
 	bool adjustIfWant = true;
+	bool accelUsed = true;
 
 	while (true)
 	{
+		adjustIfWant = (SensorValue[Jumper3] == 1) ? true : false;
+		accelUsed = true;
+		if (SensorValue[yAccel] < -1000 || SensorValue[xAccel] < -900)
+		{
+			accelUsed = false;
+		}
 
 		if (vexRT[Btn7U] == 1 && time1[T2] > 500)
 		{
@@ -322,10 +397,10 @@ task usercontrol()
 		   ClearTimer(T2);
 		}
 
-		if (vexRT[Btn7D] == 1 /*&& 980 < SensorValue[yAccel] && SensorValue[yAccel] < 1130 */)
+		if (accelUsed == true && vexRT[Btn7D] == 1 /*&& 980 < SensorValue[yAccel] && SensorValue[yAccel] < 1130 */)
 		{
     	// adjust lift only if it meets a certain condition
-			int adjustPower = 30;
+			int adjustPower = 25;
     	AdjustLiftUpSmart(20, 3, adjustPower);
 		}
 
@@ -334,7 +409,7 @@ task usercontrol()
 		int power7 = 60; // shift
 
 		power2 = ReverseIfNeeded(power2);
-		power7 = ReverseIfNeeded(power7);
+		// power7 = ReverseIfNeeded(power7);
 
 		int btn7r = vexRT[Btn7R]; // shift
 		int btn7l = vexRT[Btn7L]; // shift
@@ -361,21 +436,75 @@ task usercontrol()
 	  int btn8d = vexRT[Btn8D]; // lift down
 	  int btn8u = vexRT[Btn8U]; // lift up
 
-	  if (SensorValue[yAccel] <= -58 )
+
+	  if (btn8d != 0)
+	  {
+	  			previousDown = true;
+		}
+
+	  if (accelUsed == true && SensorValue[yAccel] <= -60)
 		{
 			  // stop when the lift is too high
 				btn8u = 0;
 		}
 
-		int lp = 127;
-		int rp = 127;
+		int lp = 115;
+		int rp = 115;
 
-		if (adjustIfWant == true)
+		if (btn8d > 0)
 		{
-			lp = GetLeftPower(btn8u, btn8d);
-			rp = GetRightPower(btn8u, btn8d);
+			lp = 40;
+			rp = 40;
+		}
 
-			/*if (lp + rp > 0)
+		if (accelUsed == true && adjustIfWant == true)
+		{
+
+
+			if (SensorValue[yAccel] >= -12)
+			{
+				if (btn8d > 0)
+				{
+					lp = 60;
+					rp = 60;
+
+					/*
+						if (lp + rp > 0)
+						{
+						writeDebugStreamLine("Down: lp:rp => (%d : %d)", lp, rp);
+						}*/			
+					/*
+					if (SensorValue[yAccel] >= -10)
+					{
+							lp = 25;
+							rp = 42;
+					}*/
+				}
+				else
+				{
+						lp = 115;
+						rp = 115;
+							
+						/*
+						if (lp + rp > 0)
+						{
+						writeDebugStreamLine("Up: lp:rp => (%d : %d)", lp, rp);
+						}*/
+				}
+			}
+			else
+			{
+				lp = GetLeftPower(btn8u, btn8d);
+				rp = GetRightPower(btn8u, btn8d);
+			
+				/*
+				if (lp + rp > 0)
+				{
+				writeDebugStreamLine("Adjusted: lp:rp => (%d : %d)", lp, rp);
+				}*/
+			}
+			/*
+			if (btn8u + btn8d > 0 && lp + rp > 0)
 			{
 				writeDebugStreamLine("lp:rp => (%d : %d)", lp, rp);
 			}*/
@@ -393,6 +522,14 @@ task usercontrol()
 
 			motor[LeftLift1] = motor[LeftLift2] = lp;
 			motor[RightLift1] = motor[RightLift2] = rp;
+/*
+			if (previousDown == true && SensorValue[yAccel] <-5 && accelUsed == true && adjustIfWant == true)
+			{ // adjust after down
+				previousDown = false;
+				int adjustPowerDown = 15;
+    		AdjustLiftUpSmart(20, 8, adjustPowerDown);
+			}
+*/
 		}
 
 		int btn5u = vexRT[Btn5U]; // take cube
@@ -410,6 +547,7 @@ task usercontrol()
 		}
 		else if (btn5u == 0 && btn5d == 0 && cubeIntakeTaking)
 		{
+				// motor[CubeIntake] = -40;
 				motor[CubeIntake] = -40;
 		}
 		else if (btn5u == 0 && btn5d == 0 && !cubeIntakeTaking)
@@ -432,7 +570,7 @@ task usercontrol()
 		}
 		else if (btn6u == 0 && btn6d == 0 && crayonIntakeTaking)
 		{
-				motor[CrayonIntake] = 30;
+				motor[CrayonIntake] = 40;
 		}
 		else if (btn6u == 0 && btn6d == 0 && !crayonIntakeTaking)
 		{
@@ -456,7 +594,7 @@ int GetLeftPower(int movingUp, int movingDown)
 	if (movingUp + movingDown == 0) return 0;
 
 	const int fullPowerUp = 127;
-	const int fullPowerDown = 127;
+	const int fullPowerDown = 80;
 //	const float delta = 0.6;
 //	const float delta_Down = 0.6;
 
@@ -516,7 +654,7 @@ int GetRightPower(int movingUp, int movingDown)
 	if (movingUp + movingDown == 0) return 0;
 
 	const int fullPowerUp = 127;
-	const int fullPowerDown = 127;
+	const int fullPowerDown = 80;
 
 	int height = SensorValue[yAccel] * -1;
 	int value = SensorValue[xAccel];
@@ -566,7 +704,7 @@ int AdjustLiftPower(int value)
 	const int fullPower = 127;
 
 	// float offset = (2 / value) * 100;
-	int power = fullPower - (value * 3);
+	int power = fullPower - (value * 5);
 	if (power < 0) power = 0;
 	return power;
 }
@@ -622,6 +760,13 @@ void SonarRotate(int distance, int power)
 	}
 
 	StopMoving();
+}
+
+void ReleaseCube(int duration,int power)
+{
+		motor[CubeIntake] = power;
+		wait1Msec(duration);
+		motor[CubeIntake] = 0;
 }
 
 void PickUpSkyrise(int duration)
@@ -721,7 +866,7 @@ void EncoderRotateSmart(int power)
 			int current = nMotorEncoder(FrontLeft);
 
 			offset = current - previous;
-			offset = offset * 1.6; // 1.7 => 1.3
+			offset = offset * 1.7; // 1.7 => 1.3
 			// if (current + offset > 0) break;
 		}
 	}
@@ -735,8 +880,35 @@ void EncoderRotateSmart(int power)
 			int current = nMotorEncoder(FrontLeft);
 
 			offset = current - previous;
-			offset = offset * 1.5;
+			offset = offset * 1.7;
 		}
+	}
+
+	StopMoving();
+}
+
+void ForBack(int power, int distance)
+{
+	if (power <= 0) return;
+
+	int current = abs(nMotorEncoder(FrontLeft));
+	float offset = 0;
+
+	// RED only for programming skill
+	power = -power;
+	while (current + offset < distance)
+	{
+		int previous = current;
+
+		motor[FrontLeft] = power;
+		motor[FrontRight] = power;
+		motor[BackRight] = power;
+		motor[BackLeft] = power;
+
+		int current = abs(nMotorEncoder(FrontLeft));
+
+		offset = current - previous;
+		offset = offset * 1.6;
 	}
 
 	StopMoving();
@@ -749,7 +921,7 @@ void AdjustLiftUpSmart(int timeout, int threshold, int originalPower)
 
 	if (-threshold < value && value < threshold) return;
 
-	int offset = 0;
+	float offset = 0;
 	int current = abs(value);
 	int original = value;
 
