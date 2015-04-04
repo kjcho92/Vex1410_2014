@@ -120,7 +120,7 @@ task autonomous()
 		/// RED RED RED RED RED
 		// int sonarRotationOriginalPower = 62;
 		int gyroRotationOriginalPower = 68;
-		int iterationcount = 2;
+		int iterationcount = 6;
 		int startBreaking = 780;
 
 		if (SensorValue[Jumper1] == 0)
@@ -160,7 +160,7 @@ task autonomous()
 			{
 				case 0: offset = -1350; break;
 				case 1: offset = -1650; break;
-				case 2: offset = -1800; break;
+				case 2: offset = -1700; break;
 				case 3: offset = -2200; break;
 				case 4: offset = -3020; break;
 				case 5: offset = -4070; break;
@@ -196,15 +196,34 @@ task autonomous()
 
 			EncoderRotateSmartToRelease(sonarRotationPower, startBreaking);
 			wait1Msec (defaultDelay);
-			int heightToDrop = 250;
+			int heightToDrop = 350;
 			if (0 == i)
 			{
 				heightToDrop = -offset;
 			}
+			else if (1 == i)
+			{
+				heightToDrop = 400;
+			}
 
 			EncoderLiftDown(0, 50, offset + heightToDrop); //Lift down
 
-			wait1Msec (defaultDelay);
+			if (i >= 3)
+			{
+				wait1Msec(200);
+				
+				
+				   // 	int adjustPower = 21;
+							//AdjustLiftUpSmart(3, 7, adjustPower);
+
+						int adjustPower = 30;
+			    	AdjustLiftUpSmart(20, 3, adjustPower);
+
+			}
+			else
+			{
+				wait1Msec(defaultDelay * 2);
+			}
 
 			ReleaseSkyrise(30); // 300 -> 30
 			writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
@@ -254,7 +273,7 @@ task autonomous()
 
 //				if (i > 1)
 			{
-				EncoderLiftDown(0, 80, -400); //Lift down
+				EncoderLiftDown(0, 80, -500); //Lift down
 				wait1Msec(sshortDelay);
 			}
 	}
