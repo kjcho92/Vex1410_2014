@@ -127,7 +127,7 @@ task autonomous()
 
 			nMotorEncoder(FrontLeft) = 0;
 			ForBack(90, 200);
-
+ 
 			return;
 		}
 
@@ -156,9 +156,9 @@ task autonomous()
 			//////////////////////
 			/// BLUE BLUE BLUE BLUE
 			// sonarRotationOriginalPower = 62;
-			gyroRotationOriginalPower = 68;
-			iterationcount = 1;
-			startBreaking = 700;
+			gyroRotationOriginalPower = 72;
+			iterationcount = 2;
+			startBreaking = 750;
 		}
 
 		ClearTimer(T3);
@@ -234,11 +234,10 @@ task autonomous()
 				heightToDrop = 400;
 			}
 
-			EncoderLiftDown(0, 50, offset + heightToDrop); //Lift down
 
 			if (i >= 3)
 			{
-				wait1Msec(200);
+				// wait1Msec(200);
 				
 				
 				   // 	int adjustPower = 21;
@@ -248,10 +247,10 @@ task autonomous()
 			    	AdjustLiftUpSmart(20, 3, adjustPower);
 
 			}
-			else
-			{
-				wait1Msec(defaultDelay * 2);
-			}
+			
+			EncoderLiftDown(0, 50, offset + heightToDrop); //Lift down
+			wait1Msec(defaultDelay);
+
 
 			ReleaseSkyrise(30); // 300 -> 30
 			writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
@@ -920,7 +919,7 @@ void EncoderRotateSmartToPickUp(int power)
 			int current = nMotorEncoder(FrontLeft);
 
 			offset = current - previous;
-			offset = offset * 1.5;
+			offset = offset * 1.4;
 			// if (current + offset > 0) break;
 		}
 	}
