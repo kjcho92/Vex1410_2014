@@ -49,6 +49,8 @@ void AdjustAutoLiftUp(int originalPower);
 void AdjustLiftUpSmart(int timeout, int threshold, int originalPower);
 int AdjustBatteryLevel(int OriginalPower);
 void FinalMove();
+void ForBack(int power, int distance);
+
 ////////////////////////////////////////////////////
 /// Drive mode
 int GetLeftPower(int movingUp, int movingDown);
@@ -103,6 +105,32 @@ void pre_auton()
 
 task autonomous()
 {
+	if (SensorValue[Jumper3] == 0)
+		{
+			nMotorEncoder(RightLift1) = 0;
+			EncoderLiftUp(0, -125, -1800); // Lift up
+
+			wait1Msec (2000);
+
+			EncoderLiftDown(0, 80, 0); //Lift down
+			wait1Msec(sshortDelay);
+
+			return;
+		}
+
+		if (SensorValue[Jumper2] == 0)
+		{
+			nMotorEncoder(RightLift1) = 0;
+			EncoderLiftUp(0, -80, -1800); // Lift up
+
+			wait1Msec (2000);
+
+			nMotorEncoder(FrontLeft) = 0;
+			ForBack(90, 200);
+
+			return;
+		}
+
 	/*
 		int defaultHeight = -1200;
 		int secondSkyrise = 130;
@@ -895,6 +923,33 @@ void EncoderRotateSmartToPickUp(int power)
 			offset = offset * 1.5;
 			// if (current + offset > 0) break;
 		}
+	}
+
+	StopMoving();
+}
+
+void ForBack(int power, int distance)
+{
+	if (power <= 0) return;
+
+	int current = abs(nMotorEncoder(FrontLeft));
+	float offset = 0;
+
+	// RED only for programming skill
+	power = -power;
+	while (current + offset < distance)
+	{
+		int previous = current;
+
+		motor[FrontLeft] = power;
+		motor[FrontRight] = power;
+		motor[BackRight] = power;
+		motor[BackLeft] = power;
+
+		int current = abs(nMotorEncoder(FrontLeft));
+
+		offset = current - previous;
+		offset = offset * 1.6;
 	}
 
 	StopMoving();
