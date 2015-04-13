@@ -48,6 +48,13 @@ void StopLift();
 void AdjustLiftUpSmart(int timeout, int threshold, int originalPower);
 int AdjustBatteryLevel(int OriginalPower);
 void ForBack(int power, int distance);
+void LeftRight(int power);
+
+////////////////////////////////////////////////////
+/// Autonomous mode - FinalMove
+void FinalMove();
+void EncoderRotateSmartForFinalMove(int power, int target);
+void Rotate(int power);
 
 ////////////////////////////////////////////////////
 /// Autonomous mode - Not using
@@ -78,6 +85,10 @@ const int defaultDelay = 50;
 //																																										 //
 /////////////////////////////////////////////////////////////////////////////////////////
 
+task liftDown();
+task openSkyrise();
+// task finalMove();
+
 void pre_auton()
 {
   // Set bStopTasksBetweenModes to false if you want to keep user created tasks running between
@@ -106,8 +117,209 @@ void pre_auton()
 //																																														//
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
+task liftDown()
+{
+		EncoderLiftDown(0, 80, -500); //Lift down
+		wait1Msec(sshortDelay);
+}
+
+task openSkyrise()
+{
+		ReleaseSkyrise(1000);
+}
+
+void FinalMove()
+{
+		StartTask(openSkyrise);
+		StartTask(liftDown);
+
+		// ClearTimer(T3);
+
+
+		// LeftRight(80);
+
+		// wait1Msec(200);
+
+		// StopMoving();
+
+
+		motor[FrontLeft] = 80;
+		motor[FrontRight] = -80;
+
+		wait1Msec(2000);
+
+		StopMoving();
+
+
+		nMotorEncoder(FrontRight) = 0;
+		nMotorEncoder(FrontLeft) = 0;
+
+		ForBack(-100,100);
+
+		wait1Msec(500);
+
+
+		motor[FrontLeft] = -70;
+		motor[FrontRight] = 70;
+
+		wait1Msec(500);
+
+		StopMoving();
+
+
+		nMotorEncoder(FrontRight) = 0;
+		nMotorEncoder(FrontLeft) = 0;
+
+
+
+		ForBack(110,350);
+
+
+
+		wait1Msec(200);
+
+				motor[FrontLeft] = 110;
+		motor[FrontRight] = -110;
+
+		wait1Msec(1200);
+
+		motor[FrontLeft] = 0;
+		motor[FrontRight] = 0;
+
+		nMotorEncoder(FrontRight) = 0;
+		nMotorEncoder(FrontLeft) = 0;
+
+
+		ForBack(110,250);
+
+		nMotorEncoder(FrontRight) = 0;
+		nMotorEncoder(FrontLeft) = 0;
+
+
+		ForBack(-120,550);
+
+
+		wait1Msec(500);
+
+
+		nMotorEncoder(FrontRight) = 0;
+		nMotorEncoder(FrontLeft) = 0;
+
+
+		EncoderRotateSmartForFinalMove(72, 1180);
+
+
+		// motor[FrontLeft] = -380;
+		// motor[FrontRight] = 380;
+
+
+
+		// nMotorEncoder(FrontRight) = 0;
+		// nMotorEncoder(FrontLeft) = 0;
+
+		// ForBack(110,150);
+
+			nMotorEncoder(FrontRight) = 0;
+		nMotorEncoder(FrontLeft) = 0;
+
+		EncoderRotateSmartForFinalMove(-72, 200);
+
+
+		ForBack(100, 200);
+
+
+		writeDebugStreamLine("T3 - %d:", time1[T3]);
+
+
+
+
+/*
+				nMotorEncoder(FrontRight) = 0;
+		nMotorEncoder(FrontLeft) = 0;
+
+
+		ForBack(100,2000);
+
+		nMotorEncoder(FrontRight) = 0;
+		nMotorEncoder(FrontLeft) = 0;
+
+
+		EncoderRotateSmartForFinalMove(72, 780);
+
+
+		wait1Msec(1000);
+
+
+		nMotorEncoder(FrontRight) = 0;
+		nMotorEncoder(FrontLeft) = 0;
+
+
+		ForBack(90,950);
+
+		wait1Msec(500);
+
+//		ForBack(90,950);
+
+		//Rotate(-50);
+
+		wait1Msec(250);
+
+		//ForBack(-63,50);
+
+		wait1Msec(5000);
+*/
+}
+
+
+void EncoderRotateSmartForFinalMove(int power, int target)
+{
+	//if (power <= 0) return;
+
+	int current = abs(nMotorEncoder(FrontLeft));
+	float offset = 0;
+
+	power = -power;
+	while (current + offset < target)
+	{
+		int previous = current;
+		Rotate(power);
+		int current = abs(nMotorEncoder(FrontLeft));
+
+		offset = current - previous;
+		offset = offset * 1.6;
+
+	}
+
+
+	StopMoving();
+}
+
+void EncoderRotateSmartForFinalMove1(int power, int target)
+{
+	//if (power <= 0) return;
+
+	int current = abs(nMotorEncoder(FrontLeft));
+	float offset = 0;
+
+	while (current + offset < target)
+	{
+		int previous = current;
+		Rotate(power);
+		int current = abs(nMotorEncoder(FrontLeft));
+
+		offset = current - previous;
+		offset = offset * 1.6;
+
+	}
+
+
+	StopMoving();
+}
+
 task autonomous()
 {
+	//FinalMove();
+
 	if (SensorValue[Jumper3] == 0)
 		{
 			nMotorEncoder(RightLift1) = 0;
@@ -130,14 +342,14 @@ task autonomous()
 
 			nMotorEncoder(FrontLeft) = 0;
 			ForBack(90, 200);
- 
+
 			return;
 		}
 
 		//////////////////////
 		/// RED RED RED RED RED
 		// int sonarRotationOriginalPower = 62;
-		int gyroRotationOriginalPower = 68;
+		int gyroRotationOriginalPower = 70;
 		int iterationcount = 6;
 		int startBreaking = 780;
 
@@ -174,16 +386,49 @@ task autonomous()
 
 			int offset = 0;
 
+
+
+			/* WORKS ON 4/11
 			switch (i)
+				{
+					case 0: offset = -1100; break;
+					case 1: offset = -1350; break;
+					case 2: offset = -1460; break;
+					case 3: offset = -2110; break;
+					case 4: offset = -2950; break;
+					case 5: offset = -3970; break;
+					case 6: offset = -5650; break;
+				}*/
+
+
+			if (iterationcount == 6)
 			{
-				case 0: offset = -1350; break;
-				case 1: offset = -1650; break;
-				case 2: offset = -1700; break;
-				case 3: offset = -2200; break;
-				case 4: offset = -3020; break;
-				case 5: offset = -4070; break;
-				case 6: offset = -5500; break;
+				switch (i) //Programming Skills
+				{
+					case 0: offset = -1200; break;
+					case 1: offset = -1350; break;
+					case 2: offset = -1460; break;
+					case 3: offset = -2110; break;
+					case 4: offset = -2950; break;
+					case 5: offset = -4100; break;
+					case 6: offset = -5450; break;
+				}
+
 			}
+			else
+			{
+				switch (i) //Regular
+				{
+					case 0: offset = -1190; break;
+					case 1: offset = -1440; break;
+					case 2: offset = -1700; break;
+					case 3: offset = -2200; break;
+					case 4: offset = -2950; break;
+					case 5: offset = -4070; break;
+					case 6: offset = -5650; break;
+				}
+			}
+
 
 			EncoderLiftUp(i, -127, offset); // Lift up
 	 		wait1Msec(defaultDelay);
@@ -225,19 +470,20 @@ task autonomous()
 			}
 
 
-			if (i >= 3)
-			{
-				// wait1Msec(200);
-				
-				
-				   // 	int adjustPower = 21;
-							//AdjustLiftUpSmart(3, 7, adjustPower);
+			wait1Msec(200); 
+			if (i >= 4)
+			{ // balancing the lifts
+				wait1Msec(300); // 500 worked
 
-						int adjustPower = 30;
+
+				   		// int adjustPower = 21;
+							// AdjustLiftUpSmart(3, 7, adjustPower);
+
+						int adjustPower = 25;
 			    	AdjustLiftUpSmart(20, 3, adjustPower);
 
 			}
-			
+
 			EncoderLiftDown(0, 50, offset + heightToDrop); //Lift down
 			wait1Msec(defaultDelay);
 
@@ -248,49 +494,21 @@ task autonomous()
 			wait1Msec(shortDelay);
 
 
-			ReleaseSkyrise(300); // 300 -> 30
-
-			/*
 			if (i == 6)
 			{
-				motor[LeftLift1] = 80;
-		    motor[RightLift1] = 80;
-		    motor[LeftLift2] = 80;
-		    motor[RightLift2] = 80;
-
 				FinalMove();
-
-				EncoderLiftDown(0, 80, 0); //Lift down
 			}
-			*/
-			int gyroRotationPower = AdjustBatteryLevel(gyroRotationOriginalPower);
-/*
-			if (i >= 1)
+			else
 			{
-				int val = 3 + i;
-				int increasing = AdjustBatteryLevel(val);
-				gyroRotationPower = gyroRotationPower + increasing;
-				writeDebugStreamLine("gyroRotationPower (%d), increasing (%d)", gyroRotationPower, increasing);
-			}
-*/
-			// rotate to the autoload
-			// EncoderRotateSmart(gyroRotationPower);
-			EncoderRotateSmartToPickUp(gyroRotationPower);
 
-			wait1Msec(defaultDelay); // didn't have this. might not need.
+				ReleaseSkyrise(300); // 300 -> 30
+				int gyroRotationPower = AdjustBatteryLevel(gyroRotationOriginalPower);
 
+				// rotate to the autoload
+				// EncoderRotateSmart(gyroRotationPower);
+				EncoderRotateSmartToPickUp(gyroRotationPower);
 
-			//EncoderLiftDown(0, 80, 0); //Lift down
-			//wait1Msec(sshortDelay);
-
-			if (SensorValue[Jumper1] == 0)
-			{
-				gyroRotationPower = -gyroRotationPower;
-			}
-
-//				if (i > 1)
-			{
-				EncoderLiftDown(0, 80, -500); //Lift down
+				EncoderLiftDown(0, 80, -200); //Lift down
 				wait1Msec(sshortDelay);
 			}
 	}
@@ -299,26 +517,7 @@ task autonomous()
 
 }
 
-void FinalMove()
-{
-		motor[FrontLeft] = 80;
-		motor[FrontRight] = -80;
 
-		wait1Msec (2000);
-
-		motor[FrontLeft] = 0;
-		motor[FrontRight] = 0;
-
-		motor[FrontLeft] = -80;
-		motor[FrontRight] = 80;
-
-		wait1Msec (500);
-
-		motor[FrontLeft] = 0;
-		motor[FrontRight] = 0;
-
-		wait1Msec(3000);
-}
 
 int AdjustBatteryLevel(int OriginalPower)
 {
@@ -331,6 +530,13 @@ int AdjustBatteryLevel(int OriginalPower)
 
 void EncoderLiftUp(int index, int power, int target)
 {
+		motor[LeftLift1] = power;
+    motor[RightLift1] = power;
+    motor[LeftLift2] = power;
+    motor[RightLift2] = power;
+
+    wait1Msec(50);
+
 	while(nMotorEncoder(RightLift1) > target)
 		{
 		    motor[LeftLift1] = power;
@@ -346,7 +552,8 @@ void EncoderLiftUp(int index, int power, int target)
 
 		writeDebugStreamLine("xAccel: (%d)", SensorValue[xAccel]);
 
-		if (index > 2)
+		//if (index > 2)
+		if (index > 12)
 		{
 			wait1Msec(50);
     	int adjustPower = 21;
@@ -412,8 +619,11 @@ task usercontrol()
 	bool adjustIfWant = true;
 	bool accelUsed = true;
 
+
 	while (true)
 	{
+		adjustIfWant = false; // just test for balance
+
 		adjustIfWant = (SensorValue[Jumper3] == 1) ? true : false;
 		accelUsed = true;
 		if (SensorValue[yAccel] < -1000 || SensorValue[xAccel] < -900)
@@ -965,7 +1175,7 @@ void EncoderRotateSmartToPickUp(int power)
 	int current = nMotorEncoder(FrontLeft);
 	float offset = 0;
 	if (current < 0)
-	{ // RED
+	{ // REDfinal move
 		while (current + offset < 0)
 		{
 			int previous = current;
@@ -973,7 +1183,7 @@ void EncoderRotateSmartToPickUp(int power)
 			int current = nMotorEncoder(FrontLeft);
 
 			offset = current - previous;			//pickup
-			offset = offset * 1.35; // 1.7 => 1.3 
+			offset = offset * 1.35; // 1.7 => 1.3
 			// if (current + offset > 0) break;
 		}
 	}
@@ -995,15 +1205,23 @@ void EncoderRotateSmartToPickUp(int power)
 	StopMoving();
 }
 
+void LeftRight(int power)
+{
+    motor[FrontLeft] = power;
+    motor[FrontRight] = -power;
+    motor[BackRight] = power;
+    motor[BackLeft] = -power;
+}
+
 void ForBack(int power, int distance)
 {
-	if (power <= 0) return;
+	//if (power <= 0) return;
 
 	int current = abs(nMotorEncoder(FrontLeft));
 	float offset = 0;
 
 	// RED only for programming skill
-	power = -power;
+	// power = -power;
 	while (current + offset < distance)
 	{
 		int previous = current;
