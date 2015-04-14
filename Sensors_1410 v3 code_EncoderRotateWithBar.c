@@ -27,7 +27,7 @@
 
 //Competition Control and Duration Settings
 #pragma competitionControl(Competition)
-#pragma autonomousDuration(20)
+#pragma autonomousDuration(60)
 #pragma userControlDuration(120)
 
 #include "Vex_Competition_Includes.c"   //Main competition background code...do not modify!
@@ -335,9 +335,9 @@ task autonomous()
 					case 1: offset = -1350; break;
 					case 2: offset = -1460; break;
 					case 3: offset = -2110; break;
-					case 4: offset = -2950; break;
-					case 5: offset = -4100; break;
-					case 6: offset = -5450; break;
+					case 4: offset = -2850; break;
+					case 5: offset = -3900; break;
+					case 6: offset = -5300; break;
 				}
 
 			}
