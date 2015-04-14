@@ -36,6 +36,7 @@
 /// Autonomous mode - Using
 void SonarRotate(int distance, int power);
 void StopMoving();
+void ClearEncoder();
 void EncoderRotateSmart(int power);
 void EncoderRotateSmartToPickUp(int power);
 void EncoderRotateSmartToRelease(int power, int target);
@@ -86,6 +87,7 @@ const int defaultDelay = 50;
 /////////////////////////////////////////////////////////////////////////////////////////
 
 task liftDown();
+task rotateToPickUp();
 task openSkyrise();
 // task finalMove();
 
@@ -120,12 +122,51 @@ void pre_auton()
 task liftDown()
 {
 		EncoderLiftDown(0, 80, -500); //Lift down
-		wait1Msec(sshortDelay);
 }
 
+task rotateToPickUp()
+{
+	int gyroRotationOriginalPower = 70;
+	int power = AdjustBatteryLevel(gyroRotationOriginalPower);
+
+	if (power <= 0) return;
+
+	int current = nMotorEncoder(FrontLeft);
+	float offset = 0;
+	if (current < 0)
+	{ // REDfinal move
+		while (current + offset < 0)
+		{
+			int previous = current;
+			Rotate(power);
+			int current = nMotorEncoder(FrontLeft);
+
+			offset = current - previous;			//pickup
+			offset = offset * 1.35; // 1.7 => 1.3
+			// if (current + offset > 0) break;
+		}
+	}
+	else
+	{ // BLUE
+		power = -power;
+		while (current + offset > 0)
+		{
+			int previous = current;
+			Rotate(power);
+			int current = nMotorEncoder(FrontLeft);
+
+			offset = current - previous;
+			offset = offset * 1.35;
+			// if (current + offset > 0) break;
+		}
+	}
+
+	StopMoving();
+}
+				
 task openSkyrise()
 {
-		ReleaseSkyrise(1000);
+		ReleaseSkyrise(300);
 }
 
 void FinalMove()
@@ -134,147 +175,57 @@ void FinalMove()
 		StartTask(liftDown);
 
 		// ClearTimer(T3);
-
-
 		// LeftRight(80);
-
 		// wait1Msec(200);
-
 		// StopMoving();
-
 
 		motor[FrontLeft] = 80;
 		motor[FrontRight] = -80;
-
 		wait1Msec(2000);
-
 		StopMoving();
 
-
-		nMotorEncoder(FrontRight) = 0;
-		nMotorEncoder(FrontLeft) = 0;
-
+		ClearEncoder();
 		ForBack(-100,100);
-
-		wait1Msec(500);
-
-
-		motor[FrontLeft] = -70;
-		motor[FrontRight] = 70;
-
-		wait1Msec(500);
-
-		StopMoving();
-
-
-		nMotorEncoder(FrontRight) = 0;
-		nMotorEncoder(FrontLeft) = 0;
-
-
-
-		ForBack(110,350);
-
-
-
-		wait1Msec(200);
-
-				motor[FrontLeft] = 110;
-		motor[FrontRight] = -110;
-
-		wait1Msec(1200);
-
-		motor[FrontLeft] = 0;
-		motor[FrontRight] = 0;
-
-		nMotorEncoder(FrontRight) = 0;
-		nMotorEncoder(FrontLeft) = 0;
-
-
-		ForBack(110,250);
-
-		nMotorEncoder(FrontRight) = 0;
-		nMotorEncoder(FrontLeft) = 0;
-
-
-		ForBack(-120,550);
-
-
-		wait1Msec(500);
-
-
-		nMotorEncoder(FrontRight) = 0;
-		nMotorEncoder(FrontLeft) = 0;
-
-
-		EncoderRotateSmartForFinalMove(72, 1180);
-
-
-		// motor[FrontLeft] = -380;
-		// motor[FrontRight] = 380;
-
-
-
-		// nMotorEncoder(FrontRight) = 0;
-		// nMotorEncoder(FrontLeft) = 0;
-
-		// ForBack(110,150);
-
-			nMotorEncoder(FrontRight) = 0;
-		nMotorEncoder(FrontLeft) = 0;
-
-		EncoderRotateSmartForFinalMove(-72, 200);
-
-
-		ForBack(100, 200);
-
-
-		writeDebugStreamLine("T3 - %d:", time1[T3]);
-
-
-
-
-/*
-				nMotorEncoder(FrontRight) = 0;
-		nMotorEncoder(FrontLeft) = 0;
-
-
-		ForBack(100,2000);
-
-		nMotorEncoder(FrontRight) = 0;
-		nMotorEncoder(FrontLeft) = 0;
-
-
-		EncoderRotateSmartForFinalMove(72, 780);
-
-
-		wait1Msec(1000);
-
-
-		nMotorEncoder(FrontRight) = 0;
-		nMotorEncoder(FrontLeft) = 0;
-
-
-		ForBack(90,950);
-
-		wait1Msec(500);
-
-//		ForBack(90,950);
-
-		//Rotate(-50);
 
 		wait1Msec(250);
 
-		//ForBack(-63,50);
+		motor[FrontLeft] = -70;
+		motor[FrontRight] = 70;
+		wait1Msec(500);
+		StopMoving();
 
-		wait1Msec(5000);
-*/
+		ClearEncoder();
+		ForBack(110,350);
+
+		wait1Msec(250);
+
+		motor[FrontLeft] = 110;
+		motor[FrontRight] = -110;
+		wait1Msec(1200);
+		StopMoving();
+
+		ClearEncoder();
+		ForBack(110,250);
+
+		ClearEncoder();
+		ForBack(-120,550);
+
+		wait1Msec(200);
+
+		ClearEncoder();
+		EncoderRotateSmartForFinalMove(72, 1180);
+
+		ClearEncoder();
+		EncoderRotateSmartForFinalMove(-72, 200);
+
+		writeDebugStreamLine("T3 - %d:", time1[T3]);
+
+		ForBack(100, 300);
 }
 
 
 void EncoderRotateSmartForFinalMove(int power, int target)
 {
-	//if (power <= 0) return;
-
 	int current = abs(nMotorEncoder(FrontLeft));
 	float offset = 0;
 
@@ -287,31 +238,7 @@ void EncoderRotateSmartForFinalMove(int power, int target)
 
 		offset = current - previous;
 		offset = offset * 1.6;
-
 	}
-
-
-	StopMoving();
-}
-
-void EncoderRotateSmartForFinalMove1(int power, int target)
-{
-	//if (power <= 0) return;
-
-	int current = abs(nMotorEncoder(FrontLeft));
-	float offset = 0;
-
-	while (current + offset < target)
-	{
-		int previous = current;
-		Rotate(power);
-		int current = abs(nMotorEncoder(FrontLeft));
-
-		offset = current - previous;
-		offset = offset * 1.6;
-
-	}
-
 
 	StopMoving();
 }
@@ -378,7 +305,6 @@ task autonomous()
 
 			// pick up skyrise
 			PickUpSkyrise(powerFortakingSkyrise); // 700 -> 500
-			powerFortakingSkyrise = 700;
 			wait1Msec (defaultDelay);
 
 			nMotorEncoder(LeftLift2) = 0;
@@ -438,25 +364,6 @@ task autonomous()
 
 			// rotate to the skyrise base
 			int sonarRotationPower = AdjustBatteryLevel(gyroRotationOriginalPower);
-
-			/*
-			if (0 == i)
-			{
-				sonarRotationPower = sonarRotationPower;
-			}*/
-			/*else if (i >= 1)
-			{
-				int val = 3 + i;
-
-				int increasing = AdjustBatteryLevel(val);
-				sonarRotationPower = sonarRotationPower + increasing;
-				writeDebugStreamLine("sonarRotationPower (%d), increasing (%d)", sonarRotationPower, increasing);
-			}*/
-
-			// SonarRotate(220, sonarRotationPower);
-
-
-
 			EncoderRotateSmartToRelease(sonarRotationPower, startBreaking);
 			wait1Msec (defaultDelay);
 			int heightToDrop = 350;
@@ -475,18 +382,12 @@ task autonomous()
 			{ // balancing the lifts
 				wait1Msec(300); // 500 worked
 
-
-				   		// int adjustPower = 21;
-							// AdjustLiftUpSmart(3, 7, adjustPower);
-
-						int adjustPower = 25;
-			    	AdjustLiftUpSmart(20, 3, adjustPower);
-
+				int adjustPower = 25;
+	    	AdjustLiftUpSmart(20, 3, adjustPower);
 			}
 
 			EncoderLiftDown(0, 50, offset + heightToDrop); //Lift down
 			wait1Msec(defaultDelay);
-
 
 			ReleaseSkyrise(30); // 300 -> 30
 			writeDebugStreamLine("T3 - %d: %d	", i, time1[T3]);
@@ -501,12 +402,14 @@ task autonomous()
 			else
 			{
 
-				ReleaseSkyrise(300); // 300 -> 30
+				// ReleaseSkyrise(300); // 300 -> 30
+				StartTask(openSkyrise);
+
 				int gyroRotationPower = AdjustBatteryLevel(gyroRotationOriginalPower);
 
 				// rotate to the autoload
-				// EncoderRotateSmart(gyroRotationPower);
 				EncoderRotateSmartToPickUp(gyroRotationPower);
+				// StartTask(rotateToPickUp);
 
 				EncoderLiftDown(0, 80, -200); //Lift down
 				wait1Msec(sshortDelay);
@@ -981,6 +884,13 @@ void StopMoving()
 		motor[FrontRight] = 0;
 		motor[BackRight] = 0;
 		motor[BackLeft] = 0;
+}
+
+
+void ClearEncoder()
+{
+		nMotorEncoder(FrontRight) = 0;
+		nMotorEncoder(FrontLeft) = 0;
 }
 
 void SonarRotate(int distance, int power)
